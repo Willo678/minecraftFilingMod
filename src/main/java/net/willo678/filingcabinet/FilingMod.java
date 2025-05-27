@@ -16,6 +16,7 @@ import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.willo678.filingcabinet.block.ModBlocks;
+import net.willo678.filingcabinet.block.entity.ModBlockEntities;
 import net.willo678.filingcabinet.item.CreativeTab;
 import net.willo678.filingcabinet.item.ModItems;
 import org.slf4j.Logger;
@@ -43,6 +44,8 @@ public class FilingMod
         // Register the Deferred Register to the mod event bus so blocks and items get registered
         ModItems.register(modEventBus);
         ModBlocks.register(modEventBus);
+
+        ModBlockEntities.register(modEventBus);
 
 
 
