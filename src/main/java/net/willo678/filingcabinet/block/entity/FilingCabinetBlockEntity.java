@@ -3,7 +3,6 @@ package net.willo678.filingcabinet.block.entity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.entity.player.Inventory;
@@ -23,17 +22,17 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
 
     private final ContainerOpenersCounter openersCounter = new ContainerOpenersCounter() {
         @Override
-        protected void onOpen(Level p_155460_, BlockPos p_155461_, BlockState p_155462_) {
+        protected void onOpen(Level level, BlockPos blockPos, BlockState blockState) {
 
         }
 
         @Override
-        protected void onClose(Level p_155473_, BlockPos p_155474_, BlockState p_155475_) {
+        protected void onClose(Level level, BlockPos blockPos, BlockState blockState) {
 
         }
 
         @Override
-        protected void openerCountChanged(Level p_155463_, BlockPos p_155464_, BlockState p_155465_, int p_155466_, int p_155467_) {
+        protected void openerCountChanged(Level level, BlockPos blockPos, BlockState blockState, int p_155466_, int p_155467_) {
 
         }
 

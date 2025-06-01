@@ -9,7 +9,6 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.willo678.filingcabinet.FilingMod;
 import net.willo678.filingcabinet.util.ChestType;
 import net.willo678.filingcabinet.util.Constants;
 
@@ -49,9 +48,9 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
     }
 
     private void addInternalInventorySlots(Container inventory) {
-        for (int chestRow = 0; chestRow < this.chestType.ROWS; chestRow++) {
-            for (int chestCol = 0; chestCol < this.chestType.ROW_LENGTH; chestCol++) {
-                this.addSlot(new Slot(inventory, chestCol + chestRow * this.chestType.ROW_LENGTH, 12 + chestCol * 18, 18 + chestRow * 18));
+        for (int chestRow = 0; chestRow < chestType.ROWS; chestRow++) {
+            for (int chestCol = 0; chestCol < chestType.ROW_LENGTH; chestCol++) {
+                this.addSlot(new Slot(inventory, chestCol + chestRow * chestType.ROW_LENGTH, 12 + chestCol * 18, 18 + chestRow * 18));
             }
         }
     }
@@ -86,11 +85,11 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
             ItemStack origin = slot.getItem();
             itemStack = origin.copy();
 
-            if (index<this.chestType.TOTAL_SLOTS) {
-                if (!this.moveItemStackTo(origin, this.chestType.TOTAL_SLOTS, this.slots.size(), true)) {
+            if (index< chestType.TOTAL_SLOTS) {
+                if (!this.moveItemStackTo(origin, chestType.TOTAL_SLOTS, this.slots.size(), true)) {
                     return ItemStack.EMPTY;
                 }
-            } else if (!this.moveItemStackTo(origin, 0, this.chestType.TOTAL_SLOTS, false)) {
+            } else if (!this.moveItemStackTo(origin, 0, chestType.TOTAL_SLOTS, false)) {
               return ItemStack.EMPTY;
             }
 
