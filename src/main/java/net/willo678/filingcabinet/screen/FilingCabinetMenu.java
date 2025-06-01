@@ -37,13 +37,26 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
         inventory.startOpen(playerInv.player);
 
 
-        addInternalInventory(playerInv);
-        addPlayerInventory(playerInv);
-        addPlayerHotbar(playerInv);
+        addInventorySlots(playerInv, inventory);
+
 
     }
 
-    private void addPlayerInventory(Inventory playerInv) {
+    private void addInventorySlots(Inventory playerInv, Container inventory) {
+        addInternalInventorySlots(inventory);
+        addPlayerInventorySlots(playerInv);
+        addPlayerHotbarSlots(playerInv);
+    }
+
+    private void addInternalInventorySlots(Container inventory) {
+        for (int chestRow = 0; chestRow < this.chestType.ROWS; chestRow++) {
+            for (int chestCol = 0; chestCol < this.chestType.ROW_LENGTH; chestCol++) {
+                this.addSlot(new Slot(inventory, chestCol + chestRow * this.chestType.ROW_LENGTH, 12 + chestCol * 18, 18 + chestRow * 18));
+            }
+        }
+    }
+
+    private void addPlayerInventorySlots(Inventory playerInv) {
         int leftCol = 12;//(this.chestType.xSize - 162) / 2 + 1;
 
         for (int playerInvRow = 0; playerInvRow < 3; playerInvRow++) {
@@ -54,23 +67,13 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
         }
     }
 
-    private void addPlayerHotbar(Inventory playerInv) {
+    private void addPlayerHotbarSlots(Inventory playerInv) {
         int leftCol = 12;
 
         for (int hotHarSlot = 0; hotHarSlot < 9; hotHarSlot++) {
             this.addSlot(new Slot(playerInv, hotHarSlot, leftCol + hotHarSlot * 18, chestType.ySize - 24));
         }
     }
-
-
-    private void addInternalInventory(Inventory playerInventory) {
-        for (int chestRow = 0; chestRow < this.chestType.ROWS; chestRow++) {
-            for (int chestCol = 0; chestCol < this.chestType.ROW_LENGTH; chestCol++) {
-                this.addSlot(new Slot(playerInventory, chestCol + chestRow * this.chestType.ROW_LENGTH, 12 + chestCol * 18, 18 + chestRow * 18));
-            }
-        }
-    }
-
 
 
 

@@ -5,6 +5,7 @@ import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -136,12 +137,20 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
     public void load(CompoundTag compoundTag) {
         super.load(compoundTag);
 
+        this.items = NonNullList.withSize(this.getContainerSize(), ItemStack.EMPTY);
+
+        if (!this.tryLoadLootTable(compoundTag)) {
+            ContainerHelper.loadAllItems(compoundTag, this.items);
+        }
     }
 
     @Override
     protected void saveAdditional(CompoundTag compoundTag) {
         super.saveAdditional(compoundTag);
 
+        if (!this.tryLoadLootTable(compoundTag)) {
+            ContainerHelper.saveAllItems(compoundTag, this.items);
+        }
     }
 
     public static void tick(Level level, BlockPos blockPos, BlockState blockState, FilingCabinetBlockEntity filingCabinetBlockEntity) {
