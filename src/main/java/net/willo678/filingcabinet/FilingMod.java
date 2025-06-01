@@ -2,6 +2,7 @@ package net.willo678.filingcabinet;
 
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.api.distmarker.Dist;
@@ -19,6 +20,9 @@ import net.willo678.filingcabinet.block.ModBlocks;
 import net.willo678.filingcabinet.block.entity.ModBlockEntities;
 import net.willo678.filingcabinet.item.CreativeTab;
 import net.willo678.filingcabinet.item.ModItems;
+import net.willo678.filingcabinet.screen.FilingCabinetScreen;
+import net.willo678.filingcabinet.screen.ModMenuTypes;
+import net.willo678.filingcabinet.util.Constants;
 import org.slf4j.Logger;
 
 // The value here should match an entry in the META-INF/mods.toml file
@@ -26,7 +30,7 @@ import org.slf4j.Logger;
 public class FilingMod
 {
     // Define mod id in a common place for everything to reference
-    public static final String MODID = "willos_filings";
+    public static final String MODID = Constants.MODID;
     // Directly reference a slf4j logger
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -46,6 +50,7 @@ public class FilingMod
         ModBlocks.register(modEventBus);
 
         ModBlockEntities.register(modEventBus);
+        ModMenuTypes.register(modEventBus);
 
 
 
@@ -87,6 +92,9 @@ public class FilingMod
             // Some client setup code
             LOGGER.info("HELLO FROM CLIENT SETUP");
             LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
+
+            //Register Menu screen
+            MenuScreens.register(ModMenuTypes.FILING_CABINET_MENU.get(), FilingCabinetScreen::new);
         }
     }
 }

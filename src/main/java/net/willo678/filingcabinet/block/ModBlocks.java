@@ -4,7 +4,6 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.Material;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -12,8 +11,7 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import net.willo678.filingcabinet.FilingMod;
-import net.willo678.filingcabinet.block.custom.BasicFilingCabinetBlock;
-import net.willo678.filingcabinet.block.entity.BasicFilingCabinetBlockEntity;
+import net.willo678.filingcabinet.block.custom.FilingCabinetBlock;
 import net.willo678.filingcabinet.item.ModItems;
 
 import java.util.function.Supplier;
@@ -39,8 +37,8 @@ public class ModBlocks {
 
     /* BLOCK DEFINITIONS */
 
-    public static final RegistryObject<Block> BASIC_FILING_CABINET =
-            registerBlock("basic_filing_cabinet"
-                    , () -> new BasicFilingCabinetBlock(BlockBehaviour.Properties.of(Material.METAL))
+    public static final RegistryObject<Block> FILING_CABINET =
+            registerBlock("filing_cabinet"
+                    , () -> new FilingCabinetBlock(BlockBehaviour.Properties.of(Material.METAL))
                     , FilingMod.TAB);
 }

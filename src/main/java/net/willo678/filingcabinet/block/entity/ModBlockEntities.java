@@ -17,10 +17,10 @@ public class ModBlockEntities {
     }
 
 
-    public static final RegistryObject<BlockEntityType<BasicFilingCabinetBlockEntity>> BASIC_FILING_CABINET =
-            BLOCK_ENTITIES.register("basic_filing_cabinet",
-                    () -> BlockEntityType.Builder.of(BasicFilingCabinetBlockEntity::new,
-                            ModBlocks.BASIC_FILING_CABINET.get()).build(null));
+    public static final RegistryObject<BlockEntityType<FilingCabinetBlockEntity>> FILING_CABINET =
+            BLOCK_ENTITIES.register("filing_cabinet",
+                    () -> BlockEntityType.Builder.of(FilingCabinetBlockEntity::new,
+                            ModBlocks.FILING_CABINET.get()).build(null));
 
 
 
