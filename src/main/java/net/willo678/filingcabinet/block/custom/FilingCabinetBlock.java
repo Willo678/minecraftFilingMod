@@ -2,6 +2,7 @@ package net.willo678.filingcabinet.block.custom;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -14,14 +15,14 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraftforge.network.NetworkHooks;
-import net.willo678.filingcabinet.block.entity.BasicFilingCabinetBlockEntity;
+import net.willo678.filingcabinet.block.entity.FilingCabinetBlockEntity;
 import net.willo678.filingcabinet.block.entity.ModBlockEntities;
 import org.jetbrains.annotations.Nullable;
 
-public class BasicFilingCabinetBlock extends BaseEntityBlock {
+public class FilingCabinetBlock extends BaseEntityBlock {
 
 
-    public BasicFilingCabinetBlock(Properties properties) {
+    public FilingCabinetBlock(Properties properties) {
         super(properties);
     }
 
@@ -40,22 +41,27 @@ public class BasicFilingCabinetBlock extends BaseEntityBlock {
     }
 
     @Override
-    public void onRemove(BlockState pState, Level pLevel, BlockPos pPos, BlockState pNewState, boolean pIsMoving) {
-        if (pState.getBlock() != pNewState.getBlock()) {
-            BlockEntity blockEntity = pLevel.getBlockEntity(pPos);
-            if (blockEntity instanceof BasicFilingCabinetBlockEntity) {
-                ((BasicFilingCabinetBlockEntity) blockEntity).drops();
+    public void onRemove(BlockState blockstate, Level level, BlockPos blockPos, BlockState newState, boolean isMoving) {
+        if (blockstate.getBlock() != newState.getBlock()) {
+            BlockEntity blockEntity = level.getBlockEntity(blockPos);
+
+            if (blockEntity instanceof FilingCabinetBlockEntity bfcbEntity) {
+                Containers.dropContents(level, blockPos, bfcbEntity);
+                level.updateNeighborsAt(blockPos, this);
             }
+
         }
-        super.onRemove(pState, pLevel, pPos, pNewState, pIsMoving);
+
+        super.onRemove(blockstate, level, blockPos, newState, isMoving);
     }
+
 
     @Override
     public InteractionResult use(BlockState pBlockState, Level pLevel, BlockPos pPos, Player pPlayer, InteractionHand pHand, BlockHitResult pHit) {
         if (!pLevel.isClientSide) {
             BlockEntity entity = pLevel.getBlockEntity(pPos);
-            if (entity instanceof BasicFilingCabinetBlockEntity) {
-                NetworkHooks.openScreen(((ServerPlayer) pPlayer), (BasicFilingCabinetBlockEntity)entity, pPos);
+            if (entity instanceof FilingCabinetBlockEntity) {
+                NetworkHooks.openScreen(((ServerPlayer) pPlayer), (FilingCabinetBlockEntity)entity, pPos);
             } else {
                 throw new IllegalStateException("Our Container provider is missing!");
             }
@@ -67,14 +73,14 @@ public class BasicFilingCabinetBlock extends BaseEntityBlock {
     @Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos pPos, BlockState pState) {
-        return new BasicFilingCabinetBlockEntity(pPos, pState);
+        return new FilingCabinetBlockEntity(pPos, pState);
     }
 
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level pLevel, BlockState pState, BlockEntityType<T> pType) {
         return createTickerHelper(pType,
-                ModBlockEntities.BASIC_FILING_CABINET.get(),
-                BasicFilingCabinetBlockEntity::tick);
+                ModBlockEntities.FILING_CABINET.get(),
+                FilingCabinetBlockEntity::tick);
     }
 }
