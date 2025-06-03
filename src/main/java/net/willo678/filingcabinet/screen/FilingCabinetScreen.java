@@ -18,12 +18,16 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
 
     private static final ChestType chestType = FilingCabinetMenu.chestType;
 
+    private FilingCabinetMenu parent;
+
     private final int textureXSize;
     private final int textureYSize;
 
 
     public FilingCabinetScreen(FilingCabinetMenu menu, Inventory playerInv, Component title) {
         super(menu, playerInv, title);
+
+        this.parent = menu;
 
         this.imageWidth = chestType.xSize;
         this.imageHeight = chestType.ySize;

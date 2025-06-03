@@ -1,5 +1,6 @@
 package net.willo678.filingcabinet.screen;
 
+import net.minecraft.core.NonNullList;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
@@ -9,18 +10,24 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.willo678.filingcabinet.block.entity.FilingCabinetBlockEntity;
 import net.willo678.filingcabinet.util.ChestType;
 import net.willo678.filingcabinet.util.Constants;
 
 public class FilingCabinetMenu extends AbstractContainerMenu {
 
-    private final Container container;
     public static final ChestType chestType = Constants.FILING_CABINET;
+
+
+    private NonNullList<ItemStack> items;
+    private final Container container;
+
+    public int scrollProgress;
 
 
 
     public FilingCabinetMenu(int id, Inventory playerInv, FriendlyByteBuf extraData) {
-        this(id, playerInv, playerInv.player.level.getBlockEntity(extraData.readBlockPos()), new SimpleContainer(chestType.TOTAL_SLOTS));
+        this(id, playerInv, playerInv.player.level.getBlockEntity(extraData.readBlockPos()), new SimpleContainer(chestType.DISPLAY_TOTAL_SLOTS));
     }
 
     public FilingCabinetMenu(int id, Inventory playerInv, BlockEntity entity, Container inventory) {
@@ -30,15 +37,18 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
     public FilingCabinetMenu(int id, Inventory playerInv, Container inventory) {
         super(ModMenuTypes.FILING_CABINET_MENU.get(), id);
 
-
+        this.scrollProgress = 0;
         this.container = inventory;
+
+        this.items = NonNullList.withSize(Constants.FILING_CABINET.TOTAL_SLOTS, ItemStack.EMPTY);
+        for (int i=0; i<chestType.DISPLAY_TOTAL_SLOTS-1; i++) {this.items.set(i, container.getItem(i));}
+
 
         inventory.startOpen(playerInv.player);
 
-
         addInventorySlots(playerInv, inventory);
 
-
+        //this.scrollTo(0);
     }
 
     private void addInventorySlots(Inventory playerInv, Container inventory) {
@@ -48,13 +58,12 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
     }
 
     private void addInternalInventorySlots(Container inventory) {
-        for (int chestRow = 0; chestRow < chestType.ROWS; chestRow++) {
+        for (int chestRow = 0; chestRow < chestType.DISPLAY_ROWS; chestRow++) {
             for (int chestCol = 0; chestCol < chestType.ROW_LENGTH; chestCol++) {
                 this.addSlot(new Slot(inventory, chestCol + chestRow * chestType.ROW_LENGTH, 12 + chestCol * 18, 18 + chestRow * 18));
             }
         }
     }
-
     private void addPlayerInventorySlots(Inventory playerInv) {
         int leftCol = 12;//(this.chestType.xSize - 162) / 2 + 1;
 
@@ -65,7 +74,6 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
 
         }
     }
-
     private void addPlayerHotbarSlots(Inventory playerInv) {
         int leftCol = 12;
 
@@ -73,6 +81,27 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
             this.addSlot(new Slot(playerInv, hotHarSlot, leftCol + hotHarSlot * 18, chestType.ySize - 24));
         }
     }
+
+
+
+    public void scrollTo(float scroll) {
+
+        int i = (this.items.size() / 9) - 4;
+        int startRow = (int)((double)(scroll * (float) i) + 0.5D);
+
+        if (startRow < 0) {startRow=0;}
+
+        for (int row=0; row<(chestType.DISPLAY_ROWS-1); row++) {
+            for (int col=0; col<(chestType.ROW_LENGTH-1); col++) {
+                int index = col + (row + startRow) * 9;
+
+                this.container.setItem(col + row*9, ((index>=0 && index<items.size()) ? this.items.get(index) : ItemStack.EMPTY));
+            }
+
+        }
+
+    }
+
 
 
 
@@ -85,11 +114,11 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
             ItemStack origin = slot.getItem();
             itemStack = origin.copy();
 
-            if (index< chestType.TOTAL_SLOTS) {
-                if (!this.moveItemStackTo(origin, chestType.TOTAL_SLOTS, this.slots.size(), true)) {
+            if (index < chestType.DISPLAY_TOTAL_SLOTS) {
+                if (!this.moveItemStackTo(origin, chestType.DISPLAY_TOTAL_SLOTS, this.slots.size(), true)) {
                     return ItemStack.EMPTY;
                 }
-            } else if (!this.moveItemStackTo(origin, 0, chestType.TOTAL_SLOTS, false)) {
+            } else if (!this.moveItemStackTo(origin, 0, chestType.DISPLAY_TOTAL_SLOTS, false)) {
               return ItemStack.EMPTY;
             }
 
