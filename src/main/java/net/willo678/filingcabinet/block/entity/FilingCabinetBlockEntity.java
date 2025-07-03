@@ -162,7 +162,6 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
             if (items.get(item)<=0) {items.remove(item);}
 
             debugItems();
-            updateDisplay();
             return new StoredItemStack(new ItemStack(st.getItem(), count));
         } else {
             debugItems();
@@ -185,7 +184,6 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
 
     public ItemStack pushStack(ItemStack itemStack) {
         StoredItemStack is = pushStack(new StoredItemStack(itemStack));
-        updateDisplay();
         debugItems();
         return (is==null) ? ItemStack.EMPTY : is.getActualStack();
     }

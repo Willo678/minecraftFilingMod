@@ -3,7 +3,6 @@ package net.willo678.filingcabinet.screen;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.MouseHandler;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.MenuAccess;
@@ -13,14 +12,11 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.willo678.filingcabinet.container.StorageSlot;
-import net.willo678.filingcabinet.container.StorageTabButton;
 import net.willo678.filingcabinet.container.StoredItemStack;
 import net.willo678.filingcabinet.util.ChestType;
 import net.willo678.filingcabinet.util.Constants;
 import net.willo678.filingcabinet.util.NumberFormatUtil;
 import org.lwjgl.glfw.GLFW;
-
-import java.awt.event.MouseListener;
 
 import static net.willo678.filingcabinet.screen.FilingCabinetMenu.SlotAction.*;
 
