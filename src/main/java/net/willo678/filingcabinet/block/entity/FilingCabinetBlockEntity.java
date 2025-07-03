@@ -5,6 +5,7 @@ import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.ContainerHelper;
+import net.minecraft.world.Containers;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -14,12 +15,16 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.*;
 import net.minecraft.world.level.block.state.BlockState;
+import net.willo678.filingcabinet.container.StoredItemStack;
 import net.willo678.filingcabinet.screen.FilingCabinetMenu;
 import net.willo678.filingcabinet.util.Constants;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity implements LidBlockEntity {
 
-    private NonNullList<ItemStack> items;
+    public HashMap<Item, Integer> items; //Consider appropriate storage data structure
 
     private final ContainerOpenersCounter openersCounter = new ContainerOpenersCounter() {
         @Override
@@ -53,7 +58,7 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
     public FilingCabinetBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.FILING_CABINET.get(), pos, state);
 
-        this.items = NonNullList.withSize(Constants.FILING_CABINET.TOTAL_SLOTS, ItemStack.EMPTY);
+        this.items = new HashMap<>();
     }
 
 
@@ -83,18 +88,26 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
 
     @Override
     public NonNullList<ItemStack> getItems() {
-        return this.items;
+        NonNullList<ItemStack> itemList = NonNullList.createWithCapacity(this.items.size());
+
+        int index = 0;
+        for (Map.Entry<Item, Integer> entry : items.entrySet()) {
+            itemList.set(index, new ItemStack(entry.getKey(), entry.getValue()));
+        }
+
+        return itemList;
     }
 
     @Override
-    protected void setItems(NonNullList<ItemStack> inputItems) {
-        this.items = NonNullList.withSize(Constants.FILING_CABINET.TOTAL_SLOTS, ItemStack.EMPTY);
+    public void setItems(NonNullList<ItemStack> inputItems) {
+        this.items = new HashMap<>();
 
-        for (int i=0; i<inputItems.size(); i++) {
-            if (i < this.items.size()) {
-                this.getItems().set(i, inputItems.get(i));
-            }
+        for (ItemStack itemStack : inputItems) {
+            if (itemStack == ItemStack.EMPTY) {continue;}
+
+            this.items.merge(itemStack.getItem(), itemStack.getCount(), Integer::sum);
         }
+
     }
 
     @Override
@@ -133,27 +146,103 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
     }
 
 
+
+
+
+    public StoredItemStack pullStack(StoredItemStack stack, int max) {
+        if (stack==null || max<=0) {return null;}
+
+        ItemStack st = stack.getStack();
+        Item item = st.getItem();
+
+        if (items.containsKey(item)) {
+            Integer count = items.get(item);
+
+            items.merge(item, -count, Integer::sum);
+            if (items.get(item)<=0) {items.remove(item);}
+
+            debugItems();
+            updateDisplay();
+            return new StoredItemStack(new ItemStack(st.getItem(), count));
+        } else {
+            debugItems();
+            return null;
+        }
+    }
+
+    public StoredItemStack pushStack(StoredItemStack stack) {
+        if (stack==null) {return null;}
+        ItemStack copyStack = stack.getActualStack().copy();
+        //TODO
+        //boolean maxTransfer = 32 < copyStack.getCount();
+        items.merge(copyStack.getItem(), copyStack.getCount(), Integer::sum);
+
+
+        //return (maxTransfer) ? new StoredItemStack(new ItemStack(copyStack.getItem(), copyStack.getCount()-32)) : null;
+        debugItems();
+        return null;
+    }
+
+    public ItemStack pushStack(ItemStack itemStack) {
+        StoredItemStack is = pushStack(new StoredItemStack(itemStack));
+        updateDisplay();
+        debugItems();
+        return (is==null) ? ItemStack.EMPTY : is.getActualStack();
+    }
+
+    public void pushOrDrop(ItemStack itemStack) {
+        if (itemStack.isEmpty()) {return;}
+        StoredItemStack st0 = pushStack(new StoredItemStack(itemStack));
+        if (st0!=null) {
+            Containers.dropItemStack(level, worldPosition.getX()+0.5f, worldPosition.getY()+0.5f, worldPosition.getZ()+0.5f, st0.getActualStack());
+        }
+        debugItems();
+    }
+
+
+
+
+
+
+
+
+
     @Override
     public void load(CompoundTag compoundTag) {
         super.load(compoundTag);
 
-        this.items = NonNullList.withSize(this.getContainerSize(), ItemStack.EMPTY);
-
+        NonNullList<ItemStack> loadedItems = NonNullList.create();
         if (!this.tryLoadLootTable(compoundTag)) {
-            ContainerHelper.loadAllItems(compoundTag, this.items);
+            ContainerHelper.loadAllItems(compoundTag, loadedItems);
         }
+
+
+        setItems(loadedItems);
+
+        // Debug
+        debugItems();
     }
 
     @Override
     protected void saveAdditional(CompoundTag compoundTag) {
         super.saveAdditional(compoundTag);
 
-        if (!this.tryLoadLootTable(compoundTag)) {
-            ContainerHelper.saveAllItems(compoundTag, this.items);
-        }
+
+        ContainerHelper.saveAllItems(compoundTag, getItems());
+
+        // Debug
+        debugItems();
     }
 
     public static void tick(Level level, BlockPos blockPos, BlockState blockState, FilingCabinetBlockEntity filingCabinetBlockEntity) {
 
+    }
+
+
+    public void debugItems() {
+        Constants.log("Items:");
+        for (Map.Entry<Item, Integer> e : items.entrySet()) {
+            Constants.log("  Item: "+e.getValue()+" "+e.getKey());
+        }
     }
 }
