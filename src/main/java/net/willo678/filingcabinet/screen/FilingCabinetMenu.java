@@ -16,7 +16,9 @@ import net.willo678.filingcabinet.util.ChestType;
 import net.willo678.filingcabinet.util.Constants;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class FilingCabinetMenu extends AbstractContainerMenu {
 
@@ -28,10 +30,9 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
     protected int playerSlotsStart;
 
     public List<StorageSlot> storageSlotList = new ArrayList<>();
-    public List<StoredItemStack> itemList = new ArrayList<>();
+    public List<ItemStack> itemList = new ArrayList<>();
     public List<ItemStack> sortedItemList = new ArrayList<>();
 
-    public int scrollProgress;
 
 
 
@@ -39,14 +40,13 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
         this(id, playerInv, new SimpleContainer(chestType.TOTAL_SLOTS), (FilingCabinetBlockEntity) playerInv.player.level.getBlockEntity(extraData.readBlockPos()));
     }
 
-    public FilingCabinetMenu(int id, Inventory playerInv, Container inventory) {
-        this(id, playerInv, inventory, null);
-    }
+//    public FilingCabinetMenu(int id, Inventory playerInv, Container inventory) {
+//        this(id, playerInv, inventory, null);
+//    }
 
     public FilingCabinetMenu(int id, Inventory playerInv, Container inventory, FilingCabinetBlockEntity entity) {
         super(ModMenuTypes.FILING_CABINET_MENU.get(), id);
 
-        this.scrollProgress = 0;
         this.parent = entity;
         this.playerInv = playerInv;
 
@@ -94,7 +94,12 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
 
     protected final void addSlotToContainer(StorageSlot storageSlot) {storageSlotList.add(storageSlot);}
 
-    public final void getSlotContents(int id, StoredItemStack stack) {
+    public final void setSlotContents(int id, ItemStack stack) {
+        setSlotContents(id, new StoredItemStack(stack));
+    }
+
+    public final void setSlotContents(int id, StoredItemStack stack) {
+        if (stack.getQuantity()<=0) {stack = null;}
         storageSlotList.get(id).stack = stack;
     }
 
@@ -208,8 +213,8 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
                 } else {
                     if (clicked == null) return;
                     long maxCount = 64;
-                    for (StoredItemStack e : itemList) {
-                        if (e.equals(clicked)) maxCount = e.getQuantity();
+                    for (ItemStack e : itemList) {
+                        if (e.equals(clicked.getActualStack())) maxCount = e.getCount();
                     }
                     StoredItemStack pulled = parent.pullStack(clicked, (int) Math.max(Math.min(maxCount, clicked.getMaxStackSize()) / 4, 1));
                     if (pulled != null) {
@@ -221,18 +226,34 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
     }
 
 
-
-
-
-    public void incrementScrollProgress() {
-        this.scrollProgress = Math.min(scrollProgress+1, (chestType.ROWS-chestType.DISPLAY_ROWS));
-
+    protected void sortItemList() {
+        this.itemList = parent.getItems();
+        this.sortedItemList = itemList.stream().sorted(Comparator.comparingInt(ItemStack::getCount).reversed()).collect(Collectors.toList());
     }
 
-    public void decrementScrollProgress() {
-        this.scrollProgress = Math.max(scrollProgress-1, 0);
 
+    public void scrollTo(int scrollAmount) {
+        sortItemList();
+
+        int maxScroll = Math.max(0, sortedItemList.size()-chestType.DISPLAY_TOTAL_SLOTS) / 9;
+        scrollAmount = Math.max(0, Math.min(scrollAmount, maxScroll));
+
+        int startItemIndex = scrollAmount*9;
+
+        for (int row=0; row<chestType.DISPLAY_ROWS; row++) {
+            for (int col=0; col<chestType.ROW_LENGTH; col++) {
+                int slotIndex = col + (9*row);
+                int itemIndex = startItemIndex + slotIndex;
+                if (itemIndex<sortedItemList.size()) {
+                    setSlotContents(slotIndex, this.sortedItemList.get(itemIndex));
+                } else {
+                    setSlotContents(slotIndex, ItemStack.EMPTY);
+                }
+            }
+        }
     }
+
+
 
 
 
@@ -244,22 +265,18 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
         ItemStack itemStack = ItemStack.EMPTY;
         Slot slot = this.slots.get(index);
 
+        Constants.log("Quick Move Index: "+index);
+
         if (slot!=null && slot.hasItem()) {
             ItemStack origin = slot.getItem();
             itemStack = origin.copy();
 
-            if (index < chestType.DISPLAY_TOTAL_SLOTS) {
-                if (!this.moveItemStackTo(origin, chestType.DISPLAY_TOTAL_SLOTS, this.slots.size(), true)) {
-                    return ItemStack.EMPTY;
-                }
-            } else if (!this.moveItemStackTo(origin, 0, chestType.DISPLAY_TOTAL_SLOTS, false)) {
-              return ItemStack.EMPTY;
-            }
+            StoredItemStack remainder = parent.pushStack(new StoredItemStack(itemStack));
 
-            if (origin.isEmpty()) {
+            if (remainder==null || remainder.getQuantity()<=0) {
                 slot.set(ItemStack.EMPTY);
-            } else {
                 slot.setChanged();
+                return ItemStack.EMPTY;
             }
         }
 

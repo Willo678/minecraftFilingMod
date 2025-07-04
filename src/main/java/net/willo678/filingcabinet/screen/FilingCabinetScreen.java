@@ -29,12 +29,13 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
 
     private static final ChestType chestType = FilingCabinetMenu.chestType;
 
-    private FilingCabinetMenu parent;
+    private final FilingCabinetMenu parent;
 
     private final int textureXSize;
     private final int textureYSize;
 
     protected int slotIDUnderMouse = -1;
+    protected int scrollAmount = 0;
 
 
     public FilingCabinetScreen(FilingCabinetMenu menu, Inventory playerInv, Component title) {
@@ -57,17 +58,20 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
     }
 
     @Override
-    protected void renderLabels(PoseStack matrixStack, int mouseX, int mouseY) {
-        this.font.draw(matrixStack, this.title, 8.0F, 6.0F, 4210752);
+    protected void renderLabels(PoseStack poseStack, int mouseX, int mouseY) {
+        this.font.draw(poseStack, this.title, 8.0F, 6.0F, 4210752);
+        this.font.draw(poseStack, this.playerInventoryTitle, 8.0F, (float) (this.imageHeight - 92), 4210752);
 
-        this.font.draw(matrixStack, this.playerInventoryTitle, 8.0F, (float) (this.imageHeight - 92), 4210752);
+        poseStack.pushPose();
+        slotIDUnderMouse = drawSlots(poseStack, mouseX, mouseY);
+        poseStack.popPose();
 
-
-        matrixStack.pushPose();
-        slotIDUnderMouse = drawSlots(matrixStack, mouseX, mouseY);
-        matrixStack.popPose();
-
-
+        if (menu.getCarried().isEmpty() && slotIDUnderMouse!=-1) {
+            StorageSlot slot = getMenu().storageSlotList.get(slotIDUnderMouse);
+            if (slot.stack!=null) {
+                renderTooltip(poseStack, slot.stack.getActualStack(), (mouseX-getGuiLeft()), mouseY);
+            }
+        }
         //super.renderLabels(poseStack, mouseX, mouseY);
     }
 
@@ -138,6 +142,8 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
         this.renderBackground(poseStack);
         super.render(poseStack, mouseX, mouseY, partialTicks);
         this.renderTooltip(poseStack, mouseX, mouseY);
+
+        parent.scrollTo(scrollAmount);
     }
 
     @Override
@@ -149,7 +155,7 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
         int x = (this.width - this.imageWidth) / 2;
         int y = (this.height - this.imageHeight) / 2;
 
-        this.blit(poseStack, x, y, 0, 0, this.imageWidth, this.imageHeight, this.textureXSize, this.textureYSize);
+        blit(poseStack, x, y, 0, 0, this.imageWidth, this.imageHeight, this.textureXSize, this.textureYSize);
     }
 
 
@@ -162,9 +168,9 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
 
     public void handleMouseScroll(boolean isPositive) {
         if (isPositive) {
-            parent.incrementScrollProgress();
+            if (scrollAmount>0) {scrollAmount--;}
         } else {
-            parent.decrementScrollProgress();
+            if (scrollAmount<100) {scrollAmount++;}
         }
     }
 

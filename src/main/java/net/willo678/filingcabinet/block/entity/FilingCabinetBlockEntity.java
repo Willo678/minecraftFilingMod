@@ -90,9 +90,9 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
     public NonNullList<ItemStack> getItems() {
         NonNullList<ItemStack> itemList = NonNullList.createWithCapacity(this.items.size());
 
-        int index = 0;
+        itemList.clear();
         for (Map.Entry<Item, Integer> entry : items.entrySet()) {
-            itemList.set(index, new ItemStack(entry.getKey(), entry.getValue()));
+            itemList.add(new ItemStack(entry.getKey(), entry.getValue()));
         }
 
         return itemList;
@@ -117,7 +117,7 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
 
     @Override
     protected AbstractContainerMenu createMenu(int id, Inventory inv) {
-        return new FilingCabinetMenu(id, inv, this);
+        return new FilingCabinetMenu(id, inv, this, this);
     }
 
 
@@ -156,7 +156,7 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
         Item item = st.getItem();
 
         if (items.containsKey(item)) {
-            Integer count = items.get(item);
+            int count = Math.min(max, items.get(item));
 
             items.merge(item, -count, Integer::sum);
             if (items.get(item)<=0) {items.remove(item);}
@@ -172,8 +172,6 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
     public StoredItemStack pushStack(StoredItemStack stack) {
         if (stack==null) {return null;}
         ItemStack copyStack = stack.getActualStack().copy();
-        //TODO
-        //boolean maxTransfer = 32 < copyStack.getCount();
         items.merge(copyStack.getItem(), copyStack.getCount(), Integer::sum);
 
 
@@ -214,22 +212,14 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
             ContainerHelper.loadAllItems(compoundTag, loadedItems);
         }
 
-
         setItems(loadedItems);
-
-        // Debug
-        debugItems();
     }
 
     @Override
     protected void saveAdditional(CompoundTag compoundTag) {
         super.saveAdditional(compoundTag);
 
-
         ContainerHelper.saveAllItems(compoundTag, getItems());
-
-        // Debug
-        debugItems();
     }
 
     public static void tick(Level level, BlockPos blockPos, BlockState blockState, FilingCabinetBlockEntity filingCabinetBlockEntity) {
