@@ -162,6 +162,7 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
             if (items.get(item)<=0) {items.remove(item);}
 
             debugItems();
+            setChanged();
             return new StoredItemStack(new ItemStack(st.getItem(), count));
         } else {
             debugItems();
@@ -178,12 +179,14 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
         items.merge(copyStack.getItem(), amount, Integer::sum);
 
         debugItems();
+        setChanged();
         return (remainder>0) ? new StoredItemStack(new ItemStack(copyStack.getItem(), remainder)) : null;
     }
 
     public ItemStack pushStack(ItemStack itemStack) {
         StoredItemStack is = pushStack(new StoredItemStack(itemStack));
         debugItems();
+        setChanged();
         return (is==null) ? ItemStack.EMPTY : is.getActualStack();
     }
 
@@ -208,19 +211,23 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
     public void load(CompoundTag compoundTag) {
         super.load(compoundTag);
 
-        NonNullList<ItemStack> loadedItems = NonNullList.create();
         if (!this.tryLoadLootTable(compoundTag)) {
+            int size = (compoundTag.contains("l")) ? compoundTag.getInt("l") : 0;
+            NonNullList<ItemStack> loadedItems = NonNullList.withSize(size, ItemStack.EMPTY);
             ContainerHelper.loadAllItems(compoundTag, loadedItems);
+            setItems(loadedItems);
         }
-
-        setItems(loadedItems);
     }
 
     @Override
     protected void saveAdditional(CompoundTag compoundTag) {
         super.saveAdditional(compoundTag);
 
-        ContainerHelper.saveAllItems(compoundTag, getItems());
+        if (!this.trySaveLootTable(compoundTag)) {
+            NonNullList<ItemStack> saveItems = getItems();
+            compoundTag.putInt("l", saveItems.size());
+            ContainerHelper.saveAllItems(compoundTag, saveItems);
+        }
     }
 
     public static void tick(Level level, BlockPos blockPos, BlockState blockState, FilingCabinetBlockEntity filingCabinetBlockEntity) {
