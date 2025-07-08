@@ -223,6 +223,8 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
         ContainerHelper.saveAllItems(compoundTag, getItems());
     }
 
+    public static void tick(Level level, BlockPos blockPos, BlockState blockState, FilingCabinetBlockEntity filingCabinetBlockEntity) {
+    }
 
 
     public void debugItems() {
