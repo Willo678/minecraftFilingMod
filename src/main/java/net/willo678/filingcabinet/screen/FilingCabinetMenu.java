@@ -120,11 +120,9 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
 
 
     public void onInteract(StoredItemStack clicked, SlotAction action, boolean pullOne) {
-
         if (playerInv.player instanceof ServerPlayer serverPlayer) {serverPlayer.resetLastActionTime();}
 
         ItemStack carriedStack = getCarried();
-        Constants.log("Interact action: "+action.toString());
 
         switch (action) {
             case PULL_OR_PUSH_STACK -> {
@@ -226,6 +224,7 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
                 }
             }
         }
+        parent.debugItems();
         playerInv.setChanged();
         sendAllDataToRemote();
     }

@@ -161,11 +161,9 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
             items.merge(st.getItem(), -count, Integer::sum);
             if (items.get(item)<=0) {items.remove(item);}
 
-            debugItems();
             setChanged();
             return new StoredItemStack(new ItemStack(st.getItem(), count));
         } else {
-            debugItems();
             return null;
         }
     }
@@ -178,14 +176,12 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
 
         items.merge(copyStack.getItem(), amount, Integer::sum);
 
-        debugItems();
         setChanged();
         return (remainder>0) ? new StoredItemStack(new ItemStack(copyStack.getItem(), remainder)) : null;
     }
 
     public ItemStack pushStack(ItemStack itemStack) {
         StoredItemStack is = pushStack(new StoredItemStack(itemStack));
-        debugItems();
         setChanged();
         return (is==null) ? ItemStack.EMPTY : is.getActualStack();
     }
@@ -196,7 +192,6 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
         if (st0!=null) {
             Containers.dropItemStack(level, worldPosition.getX()+0.5f, worldPosition.getY()+0.5f, worldPosition.getZ()+0.5f, st0.getActualStack());
         }
-        debugItems();
     }
 
 

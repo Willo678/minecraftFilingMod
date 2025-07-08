@@ -11,7 +11,6 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import net.willo678.filingcabinet.FilingMod;
-import net.willo678.filingcabinet.block.custom.FilingCabinetBlock;
 import net.willo678.filingcabinet.item.ModItems;
 
 import java.util.function.Supplier;

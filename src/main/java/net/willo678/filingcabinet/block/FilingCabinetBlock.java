@@ -1,4 +1,4 @@
-package net.willo678.filingcabinet.block.custom;
+package net.willo678.filingcabinet.block;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;

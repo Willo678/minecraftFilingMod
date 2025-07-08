@@ -209,7 +209,10 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int mouseButton) {
 
-        Constants.log("Click: {"+mouseX+", "+mouseY+"} + HoveredSlot: "+slotIDUnderMouse + " + Carried: "+menu.getCarried());
+        Constants.log("Click:");
+        Constants.log("   XY - {"+mouseX+", "+mouseY+"}");
+        Constants.log("   HoveredSlot -  "+slotIDUnderMouse);
+        Constants.log("   Carried -  "+menu.getCarried());
 
         if (slotIDUnderMouse > -1) {
             if (isPullOne(mouseButton)) {
@@ -237,12 +240,12 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
             storageSlotClick(null, SPACE_CLICK, false);
         }
 
-
         return super.mouseClicked(mouseX, mouseY, mouseButton);
     }
 
     protected void storageSlotClick(StoredItemStack slotStack, FilingCabinetMenu.SlotAction action, boolean pullOne) {
-        Constants.log("Action:"+action.name()+" / SlotStack: "+slotStack);
+        Constants.log("   Action:"+action.name());
+        if (slotStack!=null) {Constants.log("   SlotStack: "+slotStack.getStack().toString());}
 
         menu.sync.sendClientInteract(slotStack, action, pullOne);
     }
