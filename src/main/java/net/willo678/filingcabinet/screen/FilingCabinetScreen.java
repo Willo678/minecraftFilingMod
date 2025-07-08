@@ -1,5 +1,8 @@
 package net.willo678.filingcabinet.screen;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
@@ -7,10 +10,12 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.MenuAccess;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import net.willo678.filingcabinet.container.StorageSlot;
 import net.willo678.filingcabinet.container.StoredItemStack;
 import net.willo678.filingcabinet.util.ChestType;
@@ -18,9 +23,25 @@ import net.willo678.filingcabinet.util.Constants;
 import net.willo678.filingcabinet.util.NumberFormatUtil;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import static net.willo678.filingcabinet.container.CabinetSyncManager.getItemId;
 import static net.willo678.filingcabinet.screen.FilingCabinetMenu.SlotAction.*;
 
 public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMenu> implements MenuAccess<FilingCabinetMenu> {
+    private static final LoadingCache<StoredItemStack, List<String>> tooltipCache = CacheBuilder.newBuilder().expireAfterAccess(5, TimeUnit.SECONDS).build(new CacheLoader<>() {
+
+        @Override
+        public List<String> load(StoredItemStack key) {
+            return key.getStack().getTooltipLines(Minecraft.getInstance().player, getTooltipFlag()).stream().map(Component::getString).collect(Collectors.toList());
+        }
+
+    });
+
 
     protected static Minecraft mc = Minecraft.getInstance();
 
@@ -30,6 +51,8 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
     private static final ChestType chestType = FilingCabinetMenu.chestType;
 
     private final FilingCabinetMenu parent;
+
+    private boolean refreshItemList = true;
 
     private final int textureXSize;
     private final int textureYSize;
@@ -54,7 +77,13 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
 
     @Override
     protected void init() {
+        clearWidgets();
         super.init();
+
+
+        refreshItemList = true;
+
+        updateSearch();
     }
 
     @Override
@@ -97,7 +126,7 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
             ItemStack stack = slot.stack.getStack().copy().split(1);
             int i = slot.xDisplayPosition, j = slot.yDisplayPosition;
 
-            this.itemRenderer.renderAndDecorateItem(this.minecraft.player, stack, i, j, 0);
+            this.itemRenderer.renderAndDecorateItem(mc.player, stack, i, j, 0);
             this.itemRenderer.renderGuiItemDecorations(this.font, stack, i, j, null);
 
             drawStackSize(poseStack, getFont(), slot.stack.getQuantity(), i, j);
@@ -161,16 +190,18 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        handleMouseScroll(delta<0);
+        handleMouseScroll(delta>0);
 
         return super.mouseScrolled(mouseX, mouseY, delta);
     }
 
     public void handleMouseScroll(boolean isPositive) {
+        int maxScroll = (int) Math.ceil(Math.max(0, getMenu().sortedItemList.size()-chestType.DISPLAY_TOTAL_SLOTS) / 9.0);
+
         if (isPositive) {
             if (scrollAmount>0) {scrollAmount--;}
         } else {
-            if (scrollAmount<100) {scrollAmount++;}
+            if (scrollAmount<maxScroll) {scrollAmount++;}
         }
     }
 
@@ -178,7 +209,7 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int mouseButton) {
 
-        Constants.log("Click: {"+mouseX+", "+mouseY+"} + HoveredSlot: "+slotIDUnderMouse);
+        Constants.log("Click: {"+mouseX+", "+mouseY+"} + HoveredSlot: "+slotIDUnderMouse + " + Carried: "+menu.getCarried());
 
         if (slotIDUnderMouse > -1) {
             if (isPullOne(mouseButton)) {
@@ -205,12 +236,15 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
         } else if (GLFW.glfwGetKey(mc.getWindow().getWindow(), GLFW.GLFW_KEY_SPACE) != GLFW.GLFW_RELEASE) {
             storageSlotClick(null, SPACE_CLICK, false);
         }
+
+
         return super.mouseClicked(mouseX, mouseY, mouseButton);
     }
 
     protected void storageSlotClick(StoredItemStack slotStack, FilingCabinetMenu.SlotAction action, boolean pullOne) {
-        Constants.log("SlotStack: "+slotStack+" / Action:"+action.name());
-        menu.onInteract(slotStack, action, pullOne);
+        Constants.log("Action:"+action.name()+" / SlotStack: "+slotStack);
+
+        menu.sync.sendClientInteract(slotStack, action, pullOne);
     }
 
     protected boolean slotIdContainsAny() {
@@ -235,9 +269,77 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
     }
 
 
+    @Override
+    protected void containerTick() {
+        updateSearch();
+    }
 
+    private void updateSearch() {
+        String searchString = ""; //searchField.getValue().trim();
+
+        if (refreshItemList ) { //|| !searchLast.equals(searchString)) {
+            getMenu().sortedItemList.clear();
+            boolean searchMod = false;
+            String search = searchString;
+
+            if (searchString.startsWith("@")) {
+                searchMod = true;
+                search = searchString.substring(1);
+            }
+
+            Pattern m = null;
+            try {
+                m = Pattern.compile(search.toLowerCase(), Pattern.CASE_INSENSITIVE);
+            } catch (Throwable ignore) {
+                try {
+                    m = Pattern.compile(Pattern.quote(search.toLowerCase()), Pattern.CASE_INSENSITIVE);
+                } catch (Throwable __) {
+                    return;
+                }
+            }
+
+            try {
+                for (int i=0; i<getMenu().itemList.size(); i++) {
+                    StoredItemStack is = getMenu().itemList.get(i);
+                    if (is!=null && is.getStack()!=null) {
+                        String dspName = searchMod ? getItemId(is.getStack().getItem()).getNamespace() : is.getStack().getHoverName().getString();
+
+                        if (m.matcher(dspName.toLowerCase()).find()) {
+                            addStackToClientList(is);
+                        } else {
+                            for (String lp : tooltipCache.get(is)) {
+                                if (m.matcher(lp).find()) {
+                                    addStackToClientList(is);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
+
+            getMenu().sortedItemList.sort(Comparator.comparingLong(StoredItemStack::getQuantity).reversed());
+            //if (!search)
+
+            getMenu().scrollTo(scrollAmount);
+
+        }
+    }
+
+    private void addStackToClientList(StoredItemStack is) {
+        getMenu().sortedItemList.add(is);
+    }
+
+    public static TooltipFlag getTooltipFlag() {
+        return Minecraft.getInstance().options.advancedItemTooltips ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL;
+    }
 
     public Font getFont() {
         return this.font;
+    }
+
+    public void receive(CompoundTag tag) {
+        menu.receiveClientNBTPacket(tag);
+//        refreshItemList = true;
     }
 }

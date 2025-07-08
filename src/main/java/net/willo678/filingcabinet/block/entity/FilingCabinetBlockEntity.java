@@ -158,7 +158,7 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
         if (items.containsKey(item)) {
             int count = Math.min(max, items.get(item));
 
-            items.merge(item, -count, Integer::sum);
+            items.merge(st.getItem(), -count, Integer::sum);
             if (items.get(item)<=0) {items.remove(item);}
 
             debugItems();
@@ -172,12 +172,13 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
     public StoredItemStack pushStack(StoredItemStack stack) {
         if (stack==null) {return null;}
         ItemStack copyStack = stack.getActualStack().copy();
-        items.merge(copyStack.getItem(), copyStack.getCount(), Integer::sum);
+        int amount = copyStack.getCount();
+        int remainder = copyStack.getCount() - amount;
 
+        items.merge(copyStack.getItem(), amount, Integer::sum);
 
-        //return (maxTransfer) ? new StoredItemStack(new ItemStack(copyStack.getItem(), copyStack.getCount()-32)) : null;
         debugItems();
-        return null;
+        return (remainder>0) ? new StoredItemStack(new ItemStack(copyStack.getItem(), remainder)) : null;
     }
 
     public ItemStack pushStack(ItemStack itemStack) {
@@ -222,9 +223,6 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
         ContainerHelper.saveAllItems(compoundTag, getItems());
     }
 
-    public static void tick(Level level, BlockPos blockPos, BlockState blockState, FilingCabinetBlockEntity filingCabinetBlockEntity) {
-
-    }
 
 
     public void debugItems() {

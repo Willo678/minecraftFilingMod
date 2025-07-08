@@ -20,6 +20,7 @@ import net.willo678.filingcabinet.block.ModBlocks;
 import net.willo678.filingcabinet.block.entity.ModBlockEntities;
 import net.willo678.filingcabinet.item.CreativeTab;
 import net.willo678.filingcabinet.item.ModItems;
+import net.willo678.filingcabinet.network.Networking;
 import net.willo678.filingcabinet.screen.FilingCabinetScreen;
 import net.willo678.filingcabinet.screen.ModMenuTypes;
 import net.willo678.filingcabinet.util.Constants;
@@ -51,7 +52,7 @@ public class FilingMod
 
         ModBlockEntities.register(modEventBus);
         ModMenuTypes.register(modEventBus);
-
+        Networking.registerMessages();
 
 
         // Register ourselves for server and other game events we are interested in

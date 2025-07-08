@@ -1,5 +1,6 @@
 package net.willo678.filingcabinet.screen;
 
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
@@ -8,17 +9,18 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.willo678.filingcabinet.block.entity.FilingCabinetBlockEntity;
+import net.willo678.filingcabinet.container.CabinetSyncManager;
 import net.willo678.filingcabinet.container.StorageSlot;
 import net.willo678.filingcabinet.container.StoredItemStack;
 import net.willo678.filingcabinet.util.ChestType;
 import net.willo678.filingcabinet.util.Constants;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 public class FilingCabinetMenu extends AbstractContainerMenu {
 
@@ -27,11 +29,15 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
     private final FilingCabinetBlockEntity parent;
     private final Inventory playerInv;
 
+    public CabinetSyncManager sync = new CabinetSyncManager();
+    public Runnable onPacket;
+
+
     protected int playerSlotsStart;
 
     public List<StorageSlot> storageSlotList = new ArrayList<>();
-    public List<ItemStack> itemList = new ArrayList<>();
-    public List<ItemStack> sortedItemList = new ArrayList<>();
+    public List<StoredItemStack> itemList = new ArrayList<>();
+    public List<StoredItemStack> sortedItemList = new ArrayList<>();
 
 
 
@@ -40,9 +46,6 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
         this(id, playerInv, new SimpleContainer(chestType.TOTAL_SLOTS), (FilingCabinetBlockEntity) playerInv.player.level.getBlockEntity(extraData.readBlockPos()));
     }
 
-//    public FilingCabinetMenu(int id, Inventory playerInv, Container inventory) {
-//        this(id, playerInv, inventory, null);
-//    }
 
     public FilingCabinetMenu(int id, Inventory playerInv, Container inventory, FilingCabinetBlockEntity entity) {
         super(ModMenuTypes.FILING_CABINET_MENU.get(), id);
@@ -53,6 +56,7 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
 
         addInventorySlots(playerInv);
         inventory.startOpen(playerInv.player);
+
     }
 
 
@@ -120,6 +124,7 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
         if (playerInv.player instanceof ServerPlayer serverPlayer) {serverPlayer.resetLastActionTime();}
 
         ItemStack carriedStack = getCarried();
+        Constants.log("Interact action: "+action.toString());
 
         switch (action) {
             case PULL_OR_PUSH_STACK -> {
@@ -153,7 +158,6 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
                         ItemStack itemStack = pulled.getActualStack();
                         this.moveItemStackTo(itemStack, playerSlotsStart+1, this.slots.size(), true);
                         if (itemStack.getCount()>0) {parent.pushOrDrop(itemStack);}
-                        playerInv.setChanged();
                     }
                 } else {
                     if (!carriedStack.isEmpty()) {
@@ -185,7 +189,6 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
                     if (itemStack.getCount() > 0) {
                         parent.pushOrDrop(itemStack);
                     }
-                    playerInv.setChanged();
                 }
             }
             case GET_HALF -> {
@@ -213,8 +216,8 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
                 } else {
                     if (clicked == null) return;
                     long maxCount = 64;
-                    for (ItemStack e : itemList) {
-                        if (e.equals(clicked.getActualStack())) maxCount = e.getCount();
+                    for (StoredItemStack e : itemList) {
+                        if (e.equals(clicked)) maxCount = e.getQuantity();
                     }
                     StoredItemStack pulled = parent.pullStack(clicked, (int) Math.max(Math.min(maxCount, clicked.getMaxStackSize()) / 4, 1));
                     if (pulled != null) {
@@ -223,21 +226,13 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
                 }
             }
         }
+        playerInv.setChanged();
+        sendAllDataToRemote();
     }
 
-
-    protected void sortItemList() {
-        this.itemList = parent.getItems();
-        this.sortedItemList = itemList.stream().sorted(Comparator.comparingInt(ItemStack::getCount).reversed()).collect(Collectors.toList());
-    }
 
 
     public void scrollTo(int scrollAmount) {
-        sortItemList();
-
-        int maxScroll = Math.max(0, sortedItemList.size()-chestType.DISPLAY_TOTAL_SLOTS) / 9;
-        scrollAmount = Math.max(0, Math.min(scrollAmount, maxScroll));
-
         int startItemIndex = scrollAmount*9;
 
         for (int row=0; row<chestType.DISPLAY_ROWS; row++) {
@@ -254,8 +249,46 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
     }
 
 
+    @Override
+    public void broadcastChanges() {
+        if (parent==null) {return;}
 
+        Map<Item, Integer> tmpItems = parent.items;
 
+        sync.update(tmpItems, (ServerPlayer) playerInv.player, tag -> {
+//            if (!parent.getLastSearch().equals(search)) {
+//                search = parent.getLastSearch();
+//                tag.putString("search", search);
+//            }
+
+//            tag.put("sortSettings", parent.sortSettings.toTag());
+        });
+
+        super.broadcastChanges();
+    }
+
+    public final void receiveClientNBTPacket(CompoundTag message) {
+        if (sync.receiveUpdate(message)) {
+            itemList = sync.getAsList();
+            playerInv.setChanged();
+        }
+        if (message.contains("search")) {
+//            search = message.getString("search");
+        }
+        if (onPacket!=null) {onPacket.run();}
+    }
+
+    public void receive(CompoundTag message) {
+        if (playerInv.player.isSpectator()) {return;}
+        if (message.contains("search")) {
+//            parent.setLastSearch(message.getString("search"));
+        }
+        sync.receiveInteract(message, this);
+        if (message.contains("termData")) {
+            CompoundTag d = message.getCompound("termData");
+//            parent.setSorting(SortSettings.fromTag(d.getCompound("sortSettings")));
+        }
+    }
 
 
 
@@ -286,7 +319,7 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(Player player) {
-        return true;//parent!=null;
+        return parent!=null;
     }
 
 
