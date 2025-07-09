@@ -1,0 +1,12 @@
+{
+  "parent" : "willos_filings:block/half_block",
+  "textures" : {
+    "particle": "#front",
+    "down": "#top",
+    "up": "#top",
+    "north": "#front",
+    "east": "#side",
+    "south": "#back",
+    "west": "#side"
+  }
+}

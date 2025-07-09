@@ -1,0 +1,8 @@
+{
+  "variants" : {
+    "facing=north" : {"model" : "willos_filings:block/filing_cabinet"},
+    "facing=east": { "model" : "willos_filings:block/filing_cabinet", "y": 90 },
+    "facing=south": { "model" : "willos_filings:block/filing_cabinet", "y": 180 },
+    "facing=west": { "model" : "willos_filings:block/filing_cabinet", "y": 270 }
+  }
+}

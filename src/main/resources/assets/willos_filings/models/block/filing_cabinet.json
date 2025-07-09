@@ -1,0 +1,10 @@
+{
+  "parent" : "willos_filings:block/half_block_orientable",
+  "textures" : {
+    "top" : "willos_filings:block/filing_cabinet_top",
+    "front" : "willos_filings:block/filing_cabinet_front",
+    "back" : "willos_filings:block/filing_cabinet_side",
+    "side" : "willos_filings:block/filing_cabinet_side",
+    "trim" : "willos_filings:block/filing_cabinet_trim"
+  }
+}
