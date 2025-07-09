@@ -48,6 +48,9 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
     private static final ResourceLocation TEXTURE =
             ResourceLocation.fromNamespaceAndPath(Constants.MODID, "textures/gui/filing_cabinet_menu.png");
 
+    protected static final ResourceLocation scrollBar
+            = ResourceLocation.fromNamespaceAndPath(Constants.MODID, "textures/gui/scrollbars.png");
+
     private static final ChestType chestType = FilingCabinetMenu.chestType;
 
     private final FilingCabinetMenu parent;
@@ -59,6 +62,8 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
 
     protected int slotIDUnderMouse = -1;
     protected int scrollAmount = 0;
+    protected float scrollMaxAmount = 0;
+    protected boolean scrollingEnabled;
 
 
     public FilingCabinetScreen(FilingCabinetMenu menu, Inventory playerInv, Component title) {
@@ -86,6 +91,46 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
         updateSearch();
     }
 
+
+    @Override
+    public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
+        this.renderBackground(poseStack);
+        super.render(poseStack, mouseX, mouseY, partialTicks);
+        this.renderTooltip(poseStack, mouseX, mouseY);
+
+
+        scrollAmount = Math.min(scrollAmount, (int)scrollMaxAmount);
+        scrollMaxAmount = (int) Math.ceil(Math.max(0, getMenu().sortedItemList.size()-chestType.DISPLAY_TOTAL_SLOTS) / 9.0);
+        scrollingEnabled = (scrollMaxAmount>0);
+        parent.scrollTo(scrollAmount);
+        renderScrollbar(poseStack, mouseX, mouseY, partialTicks);
+    }
+
+    protected void renderScrollbar(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.setShaderTexture(0, scrollBar);
+        int scrollTop = this.topPos+18;
+        int scrollMaxDistance = 91;
+        int scrollDistance = Math.min(scrollMaxDistance , (int)(scrollMaxDistance * (scrollAmount/(scrollMaxAmount==0 ? 1.0 : scrollMaxAmount))));
+        blit(poseStack, (this.leftPos+178), (scrollTop + scrollDistance), (scrollingEnabled ? 0 : 12), 0, 12, 15, 24, 15);
+
+    }
+
+
+    @Override
+    protected void renderBg(PoseStack poseStack, float mouseX, int mouseY, int partialTicks) {
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.setShaderTexture(0, TEXTURE);
+
+        int x = (this.width - this.imageWidth) / 2;
+        int y = (this.height - this.imageHeight) / 2;
+
+        blit(poseStack, x, y, 0, 0, this.imageWidth, this.imageHeight, this.textureXSize, this.textureYSize);
+    }
+
+
     @Override
     protected void renderLabels(PoseStack poseStack, int mouseX, int mouseY) {
         this.font.draw(poseStack, this.title, 8.0F, 6.0F, 4210752);
@@ -103,6 +148,9 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
         }
         //super.renderLabels(poseStack, mouseX, mouseY);
     }
+
+
+
 
 
     protected int drawSlots(PoseStack poseStack, int mouseX, int mouseY) {
@@ -164,30 +212,6 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
 
 
 
-
-
-    @Override
-    public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
-        this.renderBackground(poseStack);
-        super.render(poseStack, mouseX, mouseY, partialTicks);
-        this.renderTooltip(poseStack, mouseX, mouseY);
-
-        parent.scrollTo(scrollAmount);
-    }
-
-    @Override
-    protected void renderBg(PoseStack poseStack, float mouseX, int mouseY, int partialTicks) {
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        RenderSystem.setShaderTexture(0, TEXTURE);
-
-        int x = (this.width - this.imageWidth) / 2;
-        int y = (this.height - this.imageHeight) / 2;
-
-        blit(poseStack, x, y, 0, 0, this.imageWidth, this.imageHeight, this.textureXSize, this.textureYSize);
-    }
-
-
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
         handleMouseScroll(delta>0);
@@ -196,13 +220,12 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
     }
 
     public void handleMouseScroll(boolean isPositive) {
-        int maxScroll = (int) Math.ceil(Math.max(0, getMenu().sortedItemList.size()-chestType.DISPLAY_TOTAL_SLOTS) / 9.0);
-
         if (isPositive) {
             if (scrollAmount>0) {scrollAmount--;}
         } else {
-            if (scrollAmount<maxScroll) {scrollAmount++;}
+            if (scrollAmount< scrollMaxAmount) {scrollAmount++;}
         }
+        scrollAmount = Math.min(scrollAmount, (int) scrollMaxAmount);
     }
 
 
