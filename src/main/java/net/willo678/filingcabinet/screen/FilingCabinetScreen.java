@@ -23,7 +23,6 @@ import net.willo678.filingcabinet.util.Constants;
 import net.willo678.filingcabinet.util.NumberFormatUtil;
 import org.lwjgl.glfw.GLFW;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -344,7 +343,7 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
                 }
             } catch (Exception ignored) {}
 
-            getMenu().sortedItemList.sort(Comparator.comparingLong(StoredItemStack::getQuantity).reversed());
+            getMenu().sortedItemList.sort(Constants.FILING_COMPARATOR);
             //if (!search)
 
             getMenu().scrollTo(scrollAmount);
