@@ -53,6 +53,7 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
     };
 
     private final ChestLidController chestLidController = new ChestLidController();
+    private String lastSearch = "";
 
 
     public FilingCabinetBlockEntity(BlockPos pos, BlockState state) {
@@ -234,5 +235,13 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
         for (Map.Entry<Item, Integer> e : items.entrySet()) {
             Constants.log("  Item: "+e.getValue()+" "+e.getKey());
         }
+    }
+
+    public String getLastSearch() {
+        return lastSearch;
+    }
+
+    public void setLastSearch(String string) {
+        lastSearch = string;
     }
 }

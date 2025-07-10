@@ -92,7 +92,7 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
         clearWidgets();
         super.init();
 
-        this.searchField = new NoShadowTextField(getFont(), this.leftPos+84, this.topPos+6, 88, getFont().lineHeight+1, Component.translatable("narrator.willos_filings.search"));
+        this.searchField = new NoShadowTextField(getFont(), this.leftPos+86, this.topPos+6, 80, getFont().lineHeight+1, Component.translatable("narrator.willos_filings.search"));
         this.searchField.setMaxLength(100);
         this.searchField.setBordered(false);
         this.searchField.setVisible(true);
@@ -315,9 +315,12 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
     }
 
     private void updateSearch() {
-        String searchString = ""; //searchField.getValue().trim();
+        String searchString = searchField.getValue().trim();
 
-        if (refreshItemList ) { //|| !searchLast.equals(searchString)) {
+        searchField.setSuggestion( (searchField.getValue().isEmpty()) ? Component.translatable("narrator.willos_filings.search").getString() : "");
+
+
+        if (refreshItemList || !searchLast.equals(searchString)) {
             getMenu().sortedItemList.clear();
             boolean searchMod = false;
             String search = searchString;
@@ -359,12 +362,25 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
             } catch (Exception ignored) {}
 
             getMenu().sortedItemList.sort(Constants.FILING_COMPARATOR);
-            //if (!search)
+            if (!searchLast.equals(searchString)) {
+                this.scrollAmount = 0;
+                getMenu().scrollTo(scrollAmount);
+                CompoundTag nbt = new CompoundTag();
+                nbt.putString("search", searchString);
+                menu.sendMessage(nbt);
 
-            getMenu().scrollTo(scrollAmount);
+                onUpdateSearch(searchString);
+            } else {
+                getMenu().scrollTo(scrollAmount);
+            }
+
+            refreshItemList = false;
+            this.searchLast = searchString;
 
         }
     }
+
+    private void onUpdateSearch(String searchString) {}
 
     private void addStackToClientList(StoredItemStack is) {
         getMenu().sortedItemList.add(is);
@@ -380,6 +396,15 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
 
     public void receive(CompoundTag tag) {
         menu.receiveClientNBTPacket(tag);
-//        refreshItemList = true;
+        refreshItemList = true;
+    }
+
+    @Override
+    public boolean keyPressed(int pKeyCode, int pScanCode, int pModifiers) {
+        if (pKeyCode == 256) {
+            this.onClose();
+            return true;
+        }
+        return this.searchField.keyPressed(pKeyCode, pScanCode, pModifiers) || this.searchField.canConsumeInput() || super.keyPressed(pKeyCode, pScanCode, pModifiers);
     }
 }

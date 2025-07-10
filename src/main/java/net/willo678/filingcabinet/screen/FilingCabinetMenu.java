@@ -15,6 +15,8 @@ import net.willo678.filingcabinet.block.entity.FilingCabinetBlockEntity;
 import net.willo678.filingcabinet.container.CabinetSyncManager;
 import net.willo678.filingcabinet.container.StorageSlot;
 import net.willo678.filingcabinet.container.StoredItemStack;
+import net.willo678.filingcabinet.network.ClientToServerStoragePacket;
+import net.willo678.filingcabinet.network.Networking;
 import net.willo678.filingcabinet.util.ChestType;
 import net.willo678.filingcabinet.util.Constants;
 
@@ -38,8 +40,7 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
     public List<StorageSlot> storageSlotList = new ArrayList<>();
     public List<StoredItemStack> itemList = new ArrayList<>();
     public List<StoredItemStack> sortedItemList = new ArrayList<>();
-
-
+    private String search;
 
 
     public FilingCabinetMenu(int id, Inventory playerInv, FriendlyByteBuf extraData) {
@@ -110,7 +111,6 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
     public final StorageSlot getSlotByID(int id) {
         return storageSlotList.get(id);
     }
-
 
 
     public enum SlotAction {
@@ -255,15 +255,19 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
         Map<Item, Integer> tmpItems = parent.items;
 
         sync.update(tmpItems, (ServerPlayer) playerInv.player, tag -> {
-//            if (!parent.getLastSearch().equals(search)) {
-//                search = parent.getLastSearch();
-//                tag.putString("search", search);
-//            }
+            if (!parent.getLastSearch().equals(search)) {
+                search = parent.getLastSearch();
+                tag.putString("search", search);
+            }
 
 //            tag.put("sortSettings", parent.sortSettings.toTag());
         });
 
         super.broadcastChanges();
+    }
+
+    public void sendMessage(CompoundTag compound) {
+        Networking.sendToServer(new ClientToServerStoragePacket(compound));
     }
 
     public final void receiveClientNBTPacket(CompoundTag message) {
@@ -272,7 +276,7 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
             playerInv.setChanged();
         }
         if (message.contains("search")) {
-//            search = message.getString("search");
+            search = message.getString("search");
         }
         if (onPacket!=null) {onPacket.run();}
     }
