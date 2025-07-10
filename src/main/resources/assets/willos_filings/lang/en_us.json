@@ -2,5 +2,7 @@
   "itemGroup.filing_tab" : "Filing Mod Tab",
 
   "block.willos_filings.filing_cabinet" : "Filing Cabinet",
-  "willos_filings.container.filingcabinet_chest" : "Filing Cabinet"
+  "willos_filings.container.filingcabinet_chest" : "Filing Cabinet",
+
+  "narrator.willos_filings.search" : "Search"
 }

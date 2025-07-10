@@ -43,26 +43,34 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
 
 
     protected static Minecraft mc = Minecraft.getInstance();
-
-    private static final ResourceLocation TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(Constants.MODID, "textures/gui/filing_cabinet_menu.png");
-
-    protected static final ResourceLocation scrollBar
-            = ResourceLocation.fromNamespaceAndPath(Constants.MODID, "textures/gui/scrollbars.png");
-
+    private final FilingCabinetMenu parent;
     private static final ChestType chestType = FilingCabinetMenu.chestType;
 
-    private final FilingCabinetMenu parent;
 
-    private boolean refreshItemList = true;
-
+    // Texture related variables
+    private static final ResourceLocation TEXTURE =
+            ResourceLocation.fromNamespaceAndPath(Constants.MODID, "textures/gui/filing_cabinet_menu.png");
     private final int textureXSize;
     private final int textureYSize;
 
-    protected int slotIDUnderMouse = -1;
+
+    // Scrolling related variables
+    protected static final ResourceLocation scrollBar
+            = ResourceLocation.fromNamespaceAndPath(Constants.MODID, "textures/gui/scrollbars.png");
     protected int scrollAmount = 0;
     protected float scrollMaxAmount = 0;
     protected boolean scrollingEnabled;
+
+
+    // Searching related variables
+    protected NoShadowTextField searchField;
+    protected String searchLast = "";
+    private boolean refreshItemList = true;
+
+
+    protected int slotIDUnderMouse = -1;
+
+
 
 
     public FilingCabinetScreen(FilingCabinetMenu menu, Inventory playerInv, Component title) {
@@ -84,6 +92,13 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
         clearWidgets();
         super.init();
 
+        this.searchField = new NoShadowTextField(getFont(), this.leftPos+84, this.topPos+6, 88, getFont().lineHeight+1, Component.translatable("narrator.willos_filings.search"));
+        this.searchField.setMaxLength(100);
+        this.searchField.setBordered(false);
+        this.searchField.setVisible(true);
+        this.searchField.setValue(searchLast);
+
+        addRenderableWidget(searchField);
 
         refreshItemList = true;
 
