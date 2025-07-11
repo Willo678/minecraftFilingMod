@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "IBI",
+    "ICI",
+    "IBI"
+  ],
+  "key": {
+    "B": {
+      "item": "minecraft:iron_block"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "C": {
+      "item": "minecraft:chest"
+    }
+  },
+  "result": {
+    "item": "willos_filings:filing_cabinet"
+  }
+}
