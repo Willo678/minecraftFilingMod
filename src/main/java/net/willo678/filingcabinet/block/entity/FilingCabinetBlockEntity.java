@@ -18,13 +18,15 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.willo678.filingcabinet.container.StoredItemStack;
 import net.willo678.filingcabinet.screen.FilingCabinetMenu;
 import net.willo678.filingcabinet.util.Constants;
+import net.willo678.filingcabinet.util.SingleItemHolder;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
 public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity implements LidBlockEntity {
 
-    public HashMap<Item, Integer> items; //Consider appropriate storage data structure
+    public SingleItemHolder items; //Consider appropriate storage data structure
 
     private final ContainerOpenersCounter openersCounter = new ContainerOpenersCounter() {
         @Override
@@ -59,7 +61,7 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
     public FilingCabinetBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.FILING_CABINET.get(), pos, state);
 
-        this.items = new HashMap<>();
+        this.items = new SingleItemHolder();
     }
 
 
@@ -89,26 +91,12 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
 
     @Override
     public NonNullList<ItemStack> getItems() {
-        NonNullList<ItemStack> itemList = NonNullList.createWithCapacity(this.items.size());
-
-        itemList.clear();
-        for (Map.Entry<Item, Integer> entry : items.entrySet()) {
-            itemList.add(new ItemStack(entry.getKey(), entry.getValue()));
-        }
-
-        return itemList;
+        return items.toNonNullList();
     }
 
     @Override
     public void setItems(NonNullList<ItemStack> inputItems) {
-        this.items = new HashMap<>();
-
-        for (ItemStack itemStack : inputItems) {
-            if (itemStack == ItemStack.EMPTY) {continue;}
-
-            this.items.merge(itemStack.getItem(), itemStack.getCount(), Integer::sum);
-        }
-
+        items = SingleItemHolder.fromNonNullList(inputItems);
     }
 
     @Override
@@ -150,23 +138,15 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
 
 
 
-    public StoredItemStack pullStack(StoredItemStack stack, int max) {
+    public @Nullable StoredItemStack pullStack(StoredItemStack stack, int max) {
         if (stack==null || max<=0) {return null;}
 
-        ItemStack st = stack.getStack();
-        Item item = st.getItem();
+        ItemStack st = items.popItem(stack.getStack(), max);
 
-        if (items.containsKey(item)) {
-            int count = Math.min(max, items.get(item));
+        if (st!=null) {setChanged();}
 
-            items.merge(st.getItem(), -count, Integer::sum);
-            if (items.get(item)<=0) {items.remove(item);}
+        return new StoredItemStack(st);
 
-            setChanged();
-            return new StoredItemStack(new ItemStack(st.getItem(), count));
-        } else {
-            return null;
-        }
     }
 
     public StoredItemStack pushStack(StoredItemStack stack) {
@@ -175,7 +155,7 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
         int amount = copyStack.getCount();
         int remainder = copyStack.getCount() - amount;
 
-        items.merge(copyStack.getItem(), amount, Integer::sum);
+        items.putItem(copyStack, amount);
 
         setChanged();
         return (remainder>0) ? new StoredItemStack(new ItemStack(copyStack.getItem(), remainder)) : null;
@@ -231,10 +211,7 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
 
 
     public void debugItems() {
-        Constants.log("Items:");
-        for (Map.Entry<Item, Integer> e : items.entrySet()) {
-            Constants.log("  Item: "+e.getValue()+" "+e.getKey());
-        }
+        items.debugContents();
     }
 
     public String getLastSearch() {

@@ -6,6 +6,7 @@ import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.function.BiConsumer;
 
 public class SingleItemHolder {
     private Item itemType;
@@ -18,6 +19,13 @@ public class SingleItemHolder {
 
     public boolean canContainItem(ItemStack itemStack) {
         return (itemType==null) || (itemStack.getItem()==itemType);
+    }
+
+    public boolean putItem(ItemStack itemStack, int quantity) {
+        if (!canContainItem(itemStack)) {return false;}
+        itemType = itemType.asItem();
+        items.merge(getSingleItemstack(itemStack), quantity, Integer::sum);
+        return true;
     }
 
     public boolean putItem(ItemStack itemStack) {
@@ -33,7 +41,7 @@ public class SingleItemHolder {
     }
 
     public ItemStack popItem(ItemStack itemStack) {
-        if (contains(itemStack)) {
+        if (containsKey(itemStack)) {
             popItem(itemStack, getItem(itemStack));
         }
         return null;
@@ -71,30 +79,39 @@ public class SingleItemHolder {
         return itemList;
     }
 
-    public void fromNonNullList(NonNullList<ItemStack> list) {
-        clear();
+    public static SingleItemHolder fromNonNullList(NonNullList<ItemStack> list) {
+        SingleItemHolder toReturn = new SingleItemHolder();
 
         for (ItemStack itemStack : list) {
-            if (canContainItem(itemStack)) {
-                putItem(itemStack);
+            if (toReturn.canContainItem(itemStack)) {
+                toReturn.putItem(itemStack);
             }
         }
+
+        return toReturn;
     }
 
 
-    private ItemStack getSingleItemstack(ItemStack itemStack) {
+    public static ItemStack getSingleItemstack(ItemStack itemStack) {
         ItemStack toReturn = itemStack.copy();
         toReturn.setCount(1);
         return toReturn;
     }
 
-    private ItemStack makeItemStackOfCount(ItemStack itemStack, int count) {
+    public static ItemStack makeItemStackOfCount(ItemStack itemStack, int count) {
         ItemStack copy = itemStack.copy();
         copy.setCount(count);
         return copy;
     }
 
 
+    public void debugContents() {
+        Constants.log("Items:");
+        for (Map.Entry<ItemStack, Integer> e : items.entrySet()) {
+            Constants.log("  Item: "+e.getValue()+" "+e.getKey());
+        }
+        Constants.log("ItemType: "+itemType);
+    }
 
 
     /*
@@ -138,7 +155,7 @@ public class SingleItemHolder {
      *                              collection does not permit null elements
      *                              (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    public boolean contains(Object o) {
+    public boolean containsKey(Object o) {
         if (o instanceof ItemStack itemStack) {return items.containsKey(getSingleItemstack(itemStack));}
         else {return false;}
     }
@@ -187,12 +204,19 @@ public class SingleItemHolder {
      *                              elements
      *                              (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>),
      *                              or if the specified collection is null.
-     * @see #contains(Object)
+     * @see #containsKey(Object)
      */
     public boolean containsAll(@NotNull Collection<?> c) {
         for (Object o : c) {
-            if (!contains(o)) {return false;}
+            if (!containsKey(o)) {return false;}
         }
+        return true;
+    }
+
+    public boolean addAll(SingleItemHolder itemHolder) {
+        NonNullList<ItemStack> toAdd = itemHolder.toNonNullList();
+        if (toAdd.isEmpty()) {return false;}
+        this.addAll(toAdd);
         return true;
     }
 
@@ -252,7 +276,7 @@ public class SingleItemHolder {
      *                                       (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>),
      *                                       or if the specified collection is null
      * @see #remove(Object)
-     * @see #contains(Object)
+     * @see #containsKey(Object)
      */
     public boolean removeAll(@NotNull Collection<?> c) {
         boolean flag = false;
@@ -282,7 +306,7 @@ public class SingleItemHolder {
      *                                       (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>),
      *                                       or if the specified collection is null
      * @see #remove(Object)
-     * @see #contains(Object)
+     * @see #containsKey(Object)
      */
     public boolean retainAll(@NotNull Collection<?> c) {
         boolean flag = false;
@@ -308,4 +332,44 @@ public class SingleItemHolder {
     }
 
 
+    /**
+     * Performs the given action for each entry in this map until all entries
+     * have been processed or the action throws an exception.   Unless
+     * otherwise specified by the implementing class, actions are performed in
+     * the order of entry set iteration (if an iteration order is specified.)
+     * Exceptions thrown by the action are relayed to the caller.
+     *
+     * @implSpec
+     * The default implementation is equivalent to, for this {@code map}:
+     * <pre> {@code
+     * for (Map.Entry<K, V> entry : map.entrySet())
+     *     action.accept(entry.getKey(), entry.getValue());
+     * }</pre>
+     *
+     * The default implementation makes no guarantees about synchronization
+     * or atomicity properties of this method. Any implementation providing
+     * atomicity guarantees must override this method and document its
+     * concurrency properties.
+     *
+     * @param action The action to be performed for each entry
+     * @throws NullPointerException if the specified action is null
+     * @throws ConcurrentModificationException if an entry is found to be
+     * removed during iteration
+     * @since 1.8
+     */
+    public void forEach(BiConsumer<? super ItemStack, ? super Integer> action) {
+        Objects.requireNonNull(action);
+        for (Map.Entry<ItemStack, Integer> entry : items.entrySet()) {
+            ItemStack k;
+            Integer v;
+            try {
+                k = entry.getKey();
+                v = entry.getValue();
+            } catch (IllegalStateException ise) {
+                // this usually means the entry is no longer in the map.
+                throw new ConcurrentModificationException(ise);
+            }
+            action.accept(k, v);
+        }
+    }
 }

@@ -16,6 +16,7 @@ import net.willo678.filingcabinet.network.ClientToServerStoragePacket;
 import net.willo678.filingcabinet.network.Networking;
 import net.willo678.filingcabinet.network.ServerToClientStoragePacket;
 import net.willo678.filingcabinet.screen.FilingCabinetMenu;
+import net.willo678.filingcabinet.util.SingleItemHolder;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -24,7 +25,7 @@ public class CabinetSyncManager {
     private static final int MAX_PACKET_SIZE = 32000;
     private final Object2IntMap<StoredItemStack> idMap = new Object2IntOpenHashMap<>();
     private final Int2ObjectMap<StoredItemStack> idMap2 = new Int2ObjectArrayMap<>();
-    private final Object2IntMap<Item> items = new Object2IntArrayMap<>();
+    private final SingleItemHolder items = new SingleItemHolder();
     private final Map<StoredItemStack, StoredItemStack> itemList = new HashMap<>();
     private int lastId = 1;
     private final FriendlyByteBuf workBuf = new FriendlyByteBuf(Unpooled.buffer());
@@ -74,22 +75,22 @@ public class CabinetSyncManager {
         return stack;
     }
 
-    public void update(Map<Item, Integer> items, ServerPlayer player, Consumer<CompoundTag> extraSync) {
+    public void update(SingleItemHolder items, ServerPlayer player, Consumer<CompoundTag> extraSync) {
         List<StoredItemStack> toWrite = new ArrayList<>();
-        Set<Item> found = new HashSet<>();
+        Set<ItemStack> found = new HashSet<>();
         items.forEach((s, c) -> {
-            long pc = this.items.getInt(s);
+            long pc = this.items.getItem(s);
             if(pc != 0L)found.add(s);
             if(pc != c) {
-                toWrite.add(new StoredItemStack(new ItemStack(s), c));
+                toWrite.add(new StoredItemStack(s, c));
             }
         });
         this.items.forEach((s, c) -> {
             if(!found.contains(s))
-                toWrite.add(new StoredItemStack(new ItemStack(s), 0L));
+                toWrite.add(new StoredItemStack(s, 0L));
         });
         this.items.clear();
-        this.items.putAll(items);
+        this.items.addAll(items);
         if(!toWrite.isEmpty()) {
             workBuf.writerIndex(0);
             int j = 0;

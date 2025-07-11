@@ -19,6 +19,7 @@ import net.willo678.filingcabinet.network.ClientToServerStoragePacket;
 import net.willo678.filingcabinet.network.Networking;
 import net.willo678.filingcabinet.util.ChestType;
 import net.willo678.filingcabinet.util.Constants;
+import net.willo678.filingcabinet.util.SingleItemHolder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -252,7 +253,7 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
     public void broadcastChanges() {
         if (parent==null) {return;}
 
-        Map<Item, Integer> tmpItems = parent.items;
+        SingleItemHolder tmpItems = parent.items;
 
         sync.update(tmpItems, (ServerPlayer) playerInv.player, tag -> {
             if (!parent.getLastSearch().equals(search)) {
