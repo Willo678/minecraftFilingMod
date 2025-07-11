@@ -9,7 +9,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.willo678.filingcabinet.block.entity.FilingCabinetBlockEntity;
 import net.willo678.filingcabinet.container.CabinetSyncManager;
@@ -20,10 +19,10 @@ import net.willo678.filingcabinet.network.Networking;
 import net.willo678.filingcabinet.util.ChestType;
 import net.willo678.filingcabinet.util.Constants;
 import net.willo678.filingcabinet.util.SingleItemHolder;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class FilingCabinetMenu extends AbstractContainerMenu {
 
@@ -124,6 +123,7 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
         if (playerInv.player instanceof ServerPlayer serverPlayer) {serverPlayer.resetLastActionTime();}
 
         ItemStack carriedStack = getCarried();
+        if (!carriedStack.isEmpty() && !parent.items.canContainItem(carriedStack)) {return;}
 
         switch (action) {
             case PULL_OR_PUSH_STACK -> {
@@ -298,14 +298,15 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
 
 
     @Override
-    public ItemStack quickMoveStack(Player player, int index) {
+    public @NotNull ItemStack quickMoveStack(@NotNull Player player, int index) {
         ItemStack itemStack = ItemStack.EMPTY;
         Slot slot = this.slots.get(index);
 
         Constants.log("Quick Move Index: "+index);
 
-        if (slot!=null && slot.hasItem()) {
+        if (slot.hasItem()) {
             ItemStack origin = slot.getItem();
+            if (!parent.items.canContainItem(origin)) {return itemStack;}
             itemStack = origin.copy();
 
             StoredItemStack remainder = parent.pushStack(new StoredItemStack(itemStack));
@@ -322,7 +323,7 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
     }
 
     @Override
-    public boolean stillValid(Player player) {
+    public boolean stillValid(@NotNull Player player) {
         return parent!=null;
     }
 

@@ -3,6 +3,7 @@ package net.willo678.filingcabinet.util;
 import net.minecraft.core.NonNullList;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.willo678.filingcabinet.container.StoredItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -10,55 +11,65 @@ import java.util.function.BiConsumer;
 
 public class SingleItemHolder {
     private Item itemType;
-    private Map<ItemStack, Integer> items;
+    private Map<ItemWrapper, Integer> items;
 
     public SingleItemHolder() {
         itemType = null;
         items = new HashMap<>();
     }
 
-    public boolean canContainItem(ItemStack itemStack) {
-        return (itemType==null) || (itemStack.getItem()==itemType);
-    }
+    public boolean canContainItem(ItemWrapper itemWrapper) {return (itemType==null) || (itemWrapper.getItemStack().getItem()==itemType);}
+    public boolean canContainItem(ItemStack itemStack) {return (itemType==null) || (itemStack.getItem()==itemType);}
 
     public boolean putItem(ItemStack itemStack, int quantity) {
         if (!canContainItem(itemStack)) {return false;}
-        itemType = itemType.asItem();
-        items.merge(getSingleItemstack(itemStack), quantity, Integer::sum);
+        itemType = itemStack.getItem();
+        items.merge(getItemWrapper(itemStack), quantity, Integer::sum);
         return true;
     }
 
     public boolean putItem(ItemStack itemStack) {
         if (!canContainItem(itemStack)) {return false;}
-        itemType = itemType.asItem();
-        items.merge(getSingleItemstack(itemStack), itemStack.getCount(), Integer::sum);
+        itemType = itemStack.getItem();
+        items.merge(getItemWrapper(itemStack), itemStack.getCount(), Integer::sum);
         return true;
     }
 
-    public Integer getItem(ItemStack itemStack) {
-        ItemStack toReturn = getSingleItemstack(itemStack);
+    public boolean setItem(ItemStack itemStack) {
+        return setItem(itemStack, itemStack.getCount());
+    }
+    public boolean setItem(ItemStack itemStack, int quantity) {
+        if (!canContainItem(itemStack)) {return false;}
+        itemType = itemStack.getItem();
+        items.put(getItemWrapper(itemStack), quantity);
+        return true;
+    }
+
+    public Integer get(ItemStack itemStack) {
+        ItemWrapper toReturn = getItemWrapper(itemStack);
         return items.getOrDefault(toReturn, 0);
     }
 
     public ItemStack popItem(ItemStack itemStack) {
         if (containsKey(itemStack)) {
-            popItem(itemStack, getItem(itemStack));
+            popItem(itemStack, get(itemStack));
         }
         return null;
     }
 
     public ItemStack popItem(ItemStack itemStack, int maxQuantity) {
-        int actualQuantity = Math.min(maxQuantity, items.getOrDefault(itemStack, 0));
+        int actualQuantity = Math.min(maxQuantity, items.getOrDefault(getItemWrapper(itemStack), 0));
         if (actualQuantity==0) {return null;}
         else {
-            ItemStack toReturn = getSingleItemstack(itemStack);
-            items.merge(toReturn, -actualQuantity, Integer::sum);
+            ItemWrapper wrapper = getItemWrapper(itemStack);
+            items.merge(wrapper, -actualQuantity, Integer::sum);
 
-            if (items.get(toReturn) <= 0) {
-                items.remove(toReturn);
+            if (items.getOrDefault(wrapper,0) <= 0) {
+                items.remove(wrapper);
                 if (isEmpty()) {itemType = null;}
             }
 
+            ItemStack toReturn = wrapper.getItemStack();
             toReturn.setCount(actualQuantity);
             return toReturn;
         }
@@ -68,9 +79,9 @@ public class SingleItemHolder {
         NonNullList<ItemStack> itemList = NonNullList.createWithCapacity(this.items.size());
 
         itemList.clear();
-        for (Map.Entry<ItemStack, Integer> entry : items.entrySet()) {
+        for (Map.Entry<ItemWrapper, Integer> entry : items.entrySet()) {
             if (canContainItem(entry.getKey())) {
-                itemList.add(makeItemStackOfCount(entry.getKey(), entry.getValue()));
+                itemList.add(makeItemStackOfCount(entry.getKey().getItemStack(), entry.getValue()));
             } else {
                 itemList.add(ItemStack.EMPTY);
             }
@@ -79,6 +90,21 @@ public class SingleItemHolder {
         return itemList;
     }
 
+    public List<StoredItemStack> toStoredItemStackList() {
+        List<StoredItemStack> itemList = new ArrayList<>(this.items.size());
+
+        for (Map.Entry<ItemWrapper, Integer> entry : items.entrySet()) {
+            ItemStack stack;
+            if (canContainItem(entry.getKey())) {
+                stack = makeItemStackOfCount(entry.getKey().getItemStack(), entry.getValue());
+            } else {
+                stack = ItemStack.EMPTY;
+            }
+            itemList.add(new StoredItemStack(stack));
+        }
+
+        return itemList;
+    }
     public static SingleItemHolder fromNonNullList(NonNullList<ItemStack> list) {
         SingleItemHolder toReturn = new SingleItemHolder();
 
@@ -91,6 +117,10 @@ public class SingleItemHolder {
         return toReturn;
     }
 
+
+    public static ItemWrapper getItemWrapper (ItemStack itemStack) {
+        return new ItemWrapper(getSingleItemstack(itemStack));
+    }
 
     public static ItemStack getSingleItemstack(ItemStack itemStack) {
         ItemStack toReturn = itemStack.copy();
@@ -107,7 +137,7 @@ public class SingleItemHolder {
 
     public void debugContents() {
         Constants.log("Items:");
-        for (Map.Entry<ItemStack, Integer> e : items.entrySet()) {
+        for (Map.Entry<ItemWrapper, Integer> e : items.entrySet()) {
             Constants.log("  Item: "+e.getValue()+" "+e.getKey());
         }
         Constants.log("ItemType: "+itemType);
@@ -156,7 +186,7 @@ public class SingleItemHolder {
      *                              (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
     public boolean containsKey(Object o) {
-        if (o instanceof ItemStack itemStack) {return items.containsKey(getSingleItemstack(itemStack));}
+        if (o instanceof ItemStack itemStack) {return items.containsKey(getItemWrapper(itemStack));}
         else {return false;}
     }
 
@@ -170,7 +200,7 @@ public class SingleItemHolder {
      * {@code true} if this collection contained the specified element (or
      * equivalently, if this collection changed as a result of the call).
      *
-     * @param o element to be removed from this collection, if present
+     * @param itemStack element to be removed from this collection, if present
      * @return {@code true} if an element was removed as a result of this call
      * @throws ClassCastException            if the type of the specified element
      *                                       is incompatible with this collection
@@ -181,11 +211,10 @@ public class SingleItemHolder {
      * @throws UnsupportedOperationException if the {@code remove} operation
      *                                       is not supported by this collection
      */
-    public boolean remove(Object o) {
-        if (o instanceof ItemStack itemStack) {
-            return (items.remove(getSingleItemstack(itemStack))!=null);
-        }
-        return false;
+    public boolean remove(ItemStack itemStack) {
+        boolean flag = (items.remove(getItemWrapper(itemStack))!=null);
+        if (isEmpty()) {itemType = null;}
+        return flag;
     }
 
     /**
@@ -245,14 +274,15 @@ public class SingleItemHolder {
      * @see #putItem(ItemStack)
      */
     public boolean addAll(@NotNull Collection<? extends ItemStack> c) {
+        boolean flag = true;
         for (ItemStack itemStack : c) {
             if (putItem(itemStack)) {
                 continue;
             }
 
-            return false;
+            flag = false;
         }
-        return true;
+        return flag;
     }
 
     /**
@@ -275,13 +305,13 @@ public class SingleItemHolder {
      *                                       null elements
      *                                       (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>),
      *                                       or if the specified collection is null
-     * @see #remove(Object)
+     * @see #remove(ItemStack)
      * @see #containsKey(Object)
      */
     public boolean removeAll(@NotNull Collection<?> c) {
         boolean flag = false;
         for (Object o : c) {
-            if (remove(o)) {flag = true;}
+            if (o instanceof ItemStack itemStack && remove(itemStack)) {flag = true;}
         }
         return flag;
     }
@@ -305,12 +335,12 @@ public class SingleItemHolder {
      *                                       elements
      *                                       (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>),
      *                                       or if the specified collection is null
-     * @see #remove(Object)
+     * @see #remove(ItemStack)
      * @see #containsKey(Object)
      */
     public boolean retainAll(@NotNull Collection<?> c) {
         boolean flag = false;
-        for (ItemStack key : items.keySet()) {
+        for (ItemWrapper key : items.keySet()) {
             if (!c.contains(key)) {
                 items.remove(key);
                 flag = true;
@@ -357,10 +387,10 @@ public class SingleItemHolder {
      * removed during iteration
      * @since 1.8
      */
-    public void forEach(BiConsumer<? super ItemStack, ? super Integer> action) {
+    public void forEach(BiConsumer<? super ItemWrapper, ? super Integer> action) {
         Objects.requireNonNull(action);
-        for (Map.Entry<ItemStack, Integer> entry : items.entrySet()) {
-            ItemStack k;
+        for (Map.Entry<ItemWrapper, Integer> entry : items.entrySet()) {
+            ItemWrapper k;
             Integer v;
             try {
                 k = entry.getKey();

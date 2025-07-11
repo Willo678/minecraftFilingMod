@@ -3,7 +3,8 @@ package net.willo678.filingcabinet.container;
 import io.netty.buffer.Unpooled;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.objects.*;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.minecraft.core.Registry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
@@ -16,9 +17,13 @@ import net.willo678.filingcabinet.network.ClientToServerStoragePacket;
 import net.willo678.filingcabinet.network.Networking;
 import net.willo678.filingcabinet.network.ServerToClientStoragePacket;
 import net.willo678.filingcabinet.screen.FilingCabinetMenu;
+import net.willo678.filingcabinet.util.ItemWrapper;
 import net.willo678.filingcabinet.util.SingleItemHolder;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class CabinetSyncManager {
@@ -26,7 +31,7 @@ public class CabinetSyncManager {
     private final Object2IntMap<StoredItemStack> idMap = new Object2IntOpenHashMap<>();
     private final Int2ObjectMap<StoredItemStack> idMap2 = new Int2ObjectArrayMap<>();
     private final SingleItemHolder items = new SingleItemHolder();
-    private final Map<StoredItemStack, StoredItemStack> itemList = new HashMap<>();
+    private final SingleItemHolder itemList = new SingleItemHolder();
     private int lastId = 1;
     private final FriendlyByteBuf workBuf = new FriendlyByteBuf(Unpooled.buffer());
 
@@ -77,17 +82,17 @@ public class CabinetSyncManager {
 
     public void update(SingleItemHolder items, ServerPlayer player, Consumer<CompoundTag> extraSync) {
         List<StoredItemStack> toWrite = new ArrayList<>();
-        Set<ItemStack> found = new HashSet<>();
+        Set<ItemWrapper> found = new HashSet<>();
         items.forEach((s, c) -> {
-            long pc = this.items.getItem(s);
+            long pc = this.items.get(s.getItemStack());
             if(pc != 0L)found.add(s);
             if(pc != c) {
-                toWrite.add(new StoredItemStack(s, c));
+                toWrite.add(new StoredItemStack(s.getItemStack(), c));
             }
         });
         this.items.forEach((s, c) -> {
             if(!found.contains(s))
-                toWrite.add(new StoredItemStack(s, 0L));
+                toWrite.add(new StoredItemStack(s.getItemStack(), 0L));
         });
         this.items.clear();
         this.items.addAll(items);
@@ -134,9 +139,9 @@ public class CabinetSyncManager {
             }
             in.forEach(s -> {
                 if(s.getQuantity() == 0) {
-                    this.itemList.remove(s);
+                    this.itemList.remove(s.getStack());
                 } else {
-                    this.itemList.put(s, s);
+                    this.itemList.setItem(s.getActualStack());
                 }
             });
             return true;
@@ -204,6 +209,6 @@ public class CabinetSyncManager {
     }
 
     public List<StoredItemStack> getAsList() {
-        return new ArrayList<>(this.itemList.values());
+        return this.itemList.toStoredItemStackList();
     }
 }

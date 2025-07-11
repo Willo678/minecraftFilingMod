@@ -9,7 +9,6 @@ import net.minecraft.world.Containers;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -21,8 +20,6 @@ import net.willo678.filingcabinet.util.Constants;
 import net.willo678.filingcabinet.util.SingleItemHolder;
 
 import javax.annotation.Nullable;
-import java.util.HashMap;
-import java.util.Map;
 
 public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity implements LidBlockEntity {
 
@@ -109,7 +106,6 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
         return new FilingCabinetMenu(id, inv, this, this);
     }
 
-
     @Override
     public int getContainerSize() {
         return this.items.size();
@@ -152,13 +148,18 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
     public StoredItemStack pushStack(StoredItemStack stack) {
         if (stack==null) {return null;}
         ItemStack copyStack = stack.getActualStack().copy();
+        //Change 'amount' to any other value if you want to limit maximum insertion at a time
         int amount = copyStack.getCount();
         int remainder = copyStack.getCount() - amount;
 
-        items.putItem(copyStack, amount);
+        boolean success = items.putItem(copyStack, amount);
 
-        setChanged();
-        return (remainder>0) ? new StoredItemStack(new ItemStack(copyStack.getItem(), remainder)) : null;
+        if (success) {
+            setChanged();
+            return (remainder > 0) ? new StoredItemStack(new ItemStack(copyStack.getItem(), remainder)) : null;
+        } else {
+            return stack;
+        }
     }
 
     public ItemStack pushStack(ItemStack itemStack) {
