@@ -3,15 +3,19 @@ package net.willo678.filingcabinet.block;
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.NonNullList;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.*;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -78,15 +82,22 @@ public class FilingCabinetBlock extends HorizontalDirectionalBlock implements En
             BlockEntity blockEntity = level.getBlockEntity(blockPos);
 
             if (blockEntity instanceof FilingCabinetBlockEntity bfcbEntity) {
-                Containers.dropContents(level, blockPos, bfcbEntity);
-                level.updateNeighborsAt(blockPos, this);
+                NonNullList<ItemStack> items = bfcbEntity.getItems();
+                for (ItemStack item : items) {
+                    float stackSize = item.getMaxStackSize();
+                    for (int i=0; i<Math.ceil(item.getCount() / stackSize); i++) {
+                        ItemStack toDrop = item.copy();
+                        toDrop.setCount((int) stackSize);
+                        Containers.dropItemStack(level, blockPos.getX()+0.5F, blockPos.getY()+0.5F, blockPos.getZ()+0.5F, toDrop);
+                    }
+                }
             }
 
+            level.updateNeighborsAt(blockPos, this);
         }
 
         super.onRemove(blockstate, level, blockPos, newState, isMoving);
     }
-
     @SuppressWarnings("deprecation")
     @ParametersAreNonnullByDefault
     @Override

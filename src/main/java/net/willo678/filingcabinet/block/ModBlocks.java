@@ -38,6 +38,8 @@ public class ModBlocks {
 
     public static final RegistryObject<Block> FILING_CABINET =
             registerBlock("filing_cabinet"
-                    , () -> new FilingCabinetBlock(BlockBehaviour.Properties.of(Material.METAL))
+                    , () -> new FilingCabinetBlock(BlockBehaviour.Properties
+                            .of(Material.METAL)
+                            .strength(0.6f))
                     , FilingMod.TAB);
 }
