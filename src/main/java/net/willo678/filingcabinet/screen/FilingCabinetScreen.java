@@ -21,9 +21,11 @@ import net.willo678.filingcabinet.container.StoredItemStack;
 import net.willo678.filingcabinet.util.ChestType;
 import net.willo678.filingcabinet.util.Constants;
 import net.willo678.filingcabinet.util.NumberFormatUtil;
+import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -35,7 +37,7 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
     private static final LoadingCache<StoredItemStack, List<String>> tooltipCache = CacheBuilder.newBuilder().expireAfterAccess(5, TimeUnit.SECONDS).build(new CacheLoader<>() {
 
         @Override
-        public List<String> load(StoredItemStack key) {
+        public @NotNull List<String> load(@NotNull StoredItemStack key) {
             return key.getStack().getTooltipLines(Minecraft.getInstance().player, getTooltipFlag()).stream().map(Component::getString).collect(Collectors.toList());
         }
 
@@ -107,7 +109,7 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
 
 
     @Override
-    public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
+    public void render(@NotNull PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
         this.renderBackground(poseStack);
         super.render(poseStack, mouseX, mouseY, partialTicks);
         this.renderTooltip(poseStack, mouseX, mouseY);
@@ -120,6 +122,7 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
         renderScrollbar(poseStack, mouseX, mouseY, partialTicks);
     }
 
+    @SuppressWarnings("unused")
     protected void renderScrollbar(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
@@ -133,7 +136,7 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
 
 
     @Override
-    protected void renderBg(PoseStack poseStack, float mouseX, int mouseY, int partialTicks) {
+    protected void renderBg(@NotNull PoseStack poseStack, float mouseX, int mouseY, int partialTicks) {
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         RenderSystem.setShaderTexture(0, TEXTURE);
@@ -146,7 +149,7 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
 
 
     @Override
-    protected void renderLabels(PoseStack poseStack, int mouseX, int mouseY) {
+    protected void renderLabels(@NotNull PoseStack poseStack, int mouseX, int mouseY) {
         this.font.draw(poseStack, this.title, 8.0F, 6.0F, 4210752);
         this.font.draw(poseStack, this.playerInventoryTitle, 8.0F, (float) (this.imageHeight - 92), 4210752);
 
@@ -188,7 +191,7 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
             ItemStack stack = slot.stack.getStack().copy().split(1);
             int i = slot.xDisplayPosition, j = slot.yDisplayPosition;
 
-            this.itemRenderer.renderAndDecorateItem(mc.player, stack, i, j, 0);
+            this.itemRenderer.renderAndDecorateItem(Objects.requireNonNull(mc.player), stack, i, j, 0);
             this.itemRenderer.renderGuiItemDecorations(this.font, stack, i, j, null);
 
             drawStackSize(poseStack, getFont(), slot.stack.getQuantity(), i, j);
@@ -246,10 +249,6 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int mouseButton) {
 
-        Constants.log("Click:");
-        Constants.log("   XY - {"+mouseX+", "+mouseY+"}");
-        Constants.log("   HoveredSlot -  "+slotIDUnderMouse);
-        Constants.log("   Carried -  "+menu.getCarried());
 
         if (slotIDUnderMouse > -1) {
             if (isPullOne(mouseButton)) {
@@ -281,9 +280,6 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
     }
 
     protected void storageSlotClick(StoredItemStack slotStack, FilingCabinetMenu.SlotAction action, boolean pullOne) {
-        Constants.log("   Action:"+action.name());
-        if (slotStack!=null) {Constants.log("   SlotStack: "+slotStack.getStack().toString());}
-
         menu.sync.sendClientInteract(slotStack, action, pullOne);
     }
 
@@ -296,6 +292,7 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
         return mouseButton == 1 && hasShiftDown();
     }
 
+    @SuppressWarnings("unused")
     public boolean isTransferOne(int mouseButton) {
         return hasShiftDown() && hasControlDown();
     }
@@ -330,7 +327,7 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
                 search = searchString.substring(1);
             }
 
-            Pattern m = null;
+            Pattern m;
             try {
                 m = Pattern.compile(search.toLowerCase(), Pattern.CASE_INSENSITIVE);
             } catch (Throwable ignore) {
@@ -380,6 +377,7 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
         }
     }
 
+    @SuppressWarnings("unused")
     private void onUpdateSearch(String searchString) {}
 
     private void addStackToClientList(StoredItemStack is) {

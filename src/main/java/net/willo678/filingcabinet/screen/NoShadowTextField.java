@@ -3,12 +3,10 @@ package net.willo678.filingcabinet.screen;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiComponent;
-import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
-import net.willo678.filingcabinet.util.Constants;
+import org.jetbrains.annotations.NotNull;
 
-import javax.annotation.Nullable;
 import java.util.function.Function;
 
 public class NoShadowTextField extends net.willo678.filingcabinet.screen.EditBox {
@@ -19,22 +17,13 @@ public class NoShadowTextField extends net.willo678.filingcabinet.screen.EditBox
     public NoShadowTextField(Font font, int x, int y, int width, int height, Component message) {
         super(font, x, y, width, height, message);
     }
-    public NoShadowTextField(Font font, int x, int y, int width, int height, @Nullable EditBox editBox, Component message) {
-        super(font, x, y, width, height, editBox, message);
-    }
+
 
     @Override
-    protected void onValueChange(String pNewText) {
-        super.onValueChange(pNewText);
-        Constants.log("CursorPos: "+this.cursorPos + " / DisplayPos: "+this.displayPos + " / HighlightPos: "+this.highlightPos);
-    }
-
-    @Override
-    public void renderButton(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
+    public void renderButton(@NotNull PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
         if (this.isVisible()) {
             int colour = this.isEditable ? this.textColor : this.textColorUneditable;
             int displayCursorPos = this.cursorPos - this.displayPos;
-            int displayHighlightPos = this.highlightPos - this.displayPos;
 
             String toDisplay = this.font.plainSubstrByWidth(this.value.substring(this.displayPos), this.getInnerWidth());
             boolean cursorWithinRange = (displayCursorPos>=0) && (displayCursorPos<=toDisplay.length());
@@ -42,9 +31,6 @@ public class NoShadowTextField extends net.willo678.filingcabinet.screen.EditBox
             int l = this.bordered ? this.x + 4 : this.x;
             int i1 = this.bordered ? this.y + (this.height - 8) / 2 : this.y;
             int j1 = l;
-            if (displayHighlightPos > toDisplay.length()) {
-                displayHighlightPos = toDisplay.length();
-            }
 
             if (!toDisplay.isEmpty()) {
                 String s1 = cursorWithinRange ? toDisplay.substring(0, displayCursorPos) : toDisplay;
@@ -113,9 +99,5 @@ public class NoShadowTextField extends net.willo678.filingcabinet.screen.EditBox
             }
         }
     }
-
-    public void setY(int i) {y=i;}
-    public int getX() {return x;}
-    public int getY() {return y;}
 
 }
