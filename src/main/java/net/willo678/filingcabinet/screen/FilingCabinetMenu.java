@@ -225,7 +225,6 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
                 }
             }
         }
-        parent.debugItems();
         playerInv.setChanged();
         sendAllDataToRemote();
     }
@@ -285,7 +284,7 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
     public void receive(CompoundTag message) {
         if (playerInv.player.isSpectator()) {return;}
         if (message.contains("search")) {
-//            parent.setLastSearch(message.getString("search"));
+            parent.setLastSearch(message.getString("search"));
         }
         sync.receiveInteract(message, this);
         if (message.contains("termData")) {
@@ -302,7 +301,6 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
         ItemStack itemStack = ItemStack.EMPTY;
         Slot slot = this.slots.get(index);
 
-        Constants.log("Quick Move Index: "+index);
 
         if (slot.hasItem()) {
             ItemStack origin = slot.getItem();

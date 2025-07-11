@@ -2,16 +2,16 @@ package net.willo678.filingcabinet.screen;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.*;
+
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
+import javax.annotation.ParametersAreNonnullByDefault;
+
+import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.SharedConstants;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -31,10 +31,12 @@ import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Custom {@link net.minecraft.client.gui.components.EditBox EditBox} implementation necessitated by access modifiers
  */
+@SuppressWarnings("unused")
 @OnlyIn(Dist.CLIENT)
 public class EditBox extends AbstractWidget implements Widget, GuiEventListener {
     public static final int BACKWARDS = -1;
@@ -71,12 +73,10 @@ public class EditBox extends AbstractWidget implements Widget, GuiEventListener 
     protected Consumer<String> responder;
     /** Called to check if the text is valid */
     protected Predicate<String> filter = Objects::nonNull;
-    protected BiFunction<String, Integer, FormattedCharSequence> formatter = (p_94147_, p_94148_) -> {
-        return FormattedCharSequence.forward(p_94147_, Style.EMPTY);
-    };
+    protected BiFunction<String, Integer, FormattedCharSequence> formatter = (p_94147_, p_94148_) -> FormattedCharSequence.forward(p_94147_, Style.EMPTY);
 
     public EditBox(Font pFont, int pX, int pY, int pWidth, int pHeight, Component pMessage) {
-        this(pFont, pX, pY, pWidth, pHeight, (net.minecraft.client.gui.components.EditBox)null, pMessage);
+        this(pFont, pX, pY, pWidth, pHeight, null, pMessage);
     }
 
     public EditBox(Font pFont, int pX, int pY, int pWidth, int pHeight, @Nullable net.minecraft.client.gui.components.EditBox p_94111_, Component pMessage) {
@@ -88,7 +88,7 @@ public class EditBox extends AbstractWidget implements Widget, GuiEventListener 
 
     }
 
-    public void setResponder(Consumer<String> pResponder) {
+    public void setResponder(@Nullable Consumer<String> pResponder) {
         this.responder = pResponder;
     }
 
@@ -103,7 +103,8 @@ public class EditBox extends AbstractWidget implements Widget, GuiEventListener 
         ++this.frame;
     }
 
-    protected MutableComponent createNarrationMessage() {
+    @Override
+    protected @NotNull MutableComponent createNarrationMessage() {
         Component component = this.getMessage();
         return Component.translatable("gui.narrate.editBox", component, this.value);
     }
@@ -335,53 +336,49 @@ public class EditBox extends AbstractWidget implements Widget, GuiEventListener 
 
                 return true;
             } else {
-                switch (pKeyCode) {
-                    case 259:
+                return switch (pKeyCode) {
+                    case 259 -> {
                         if (this.isEditable) {
                             this.shiftPressed = false;
                             this.deleteText(-1);
                             this.shiftPressed = Screen.hasShiftDown();
                         }
-
-                        return true;
-                    case 260:
-                    case 264:
-                    case 265:
-                    case 266:
-                    case 267:
-                    default:
-                        return false;
-                    case 261:
+                        yield true;
+                    }
+                    default -> false;
+                    case 261 -> {
                         if (this.isEditable) {
                             this.shiftPressed = false;
                             this.deleteText(1);
                             this.shiftPressed = Screen.hasShiftDown();
                         }
-
-                        return true;
-                    case 262:
+                        yield true;
+                    }
+                    case 262 -> {
                         if (Screen.hasControlDown()) {
                             this.moveCursorTo(this.getWordPosition(1));
                         } else {
                             this.moveCursor(1);
                         }
-
-                        return true;
-                    case 263:
+                        yield true;
+                    }
+                    case 263 -> {
                         if (Screen.hasControlDown()) {
                             this.moveCursorTo(this.getWordPosition(-1));
                         } else {
                             this.moveCursor(-1);
                         }
-
-                        return true;
-                    case 268:
+                        yield true;
+                    }
+                    case 268 -> {
                         this.moveCursorToStart();
-                        return true;
-                    case 269:
+                        yield true;
+                    }
+                    case 269 -> {
                         this.moveCursorToEnd();
-                        return true;
-                }
+                        yield true;
+                    }
+                };
             }
         }
     }
@@ -435,6 +432,8 @@ public class EditBox extends AbstractWidget implements Widget, GuiEventListener 
         this.setFocused(pIsFocused);
     }
 
+    @ParametersAreNonnullByDefault
+    @Override
     public void renderButton(PoseStack pPoseStack, int pMouseX, int pMouseY, float pPartialTick) {
         if (this.isVisible()) {
             if (this.isBordered()) {
@@ -526,10 +525,10 @@ public class EditBox extends AbstractWidget implements Widget, GuiEventListener 
         RenderSystem.enableColorLogicOp();
         RenderSystem.logicOp(GlStateManager.LogicOp.OR_REVERSE);
         bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
-        bufferbuilder.vertex((double)pStartX, (double)pEndY, 0.0D).endVertex();
-        bufferbuilder.vertex((double)pEndX, (double)pEndY, 0.0D).endVertex();
-        bufferbuilder.vertex((double)pEndX, (double)pStartY, 0.0D).endVertex();
-        bufferbuilder.vertex((double)pStartX, (double)pStartY, 0.0D).endVertex();
+        bufferbuilder.vertex(pStartX, pEndY, 0.0D).endVertex();
+        bufferbuilder.vertex(pEndX, pEndY, 0.0D).endVertex();
+        bufferbuilder.vertex(pEndX, pStartY, 0.0D).endVertex();
+        bufferbuilder.vertex(pStartX, pStartY, 0.0D).endVertex();
         tesselator.end();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         RenderSystem.disableColorLogicOp();
@@ -571,7 +570,7 @@ public class EditBox extends AbstractWidget implements Widget, GuiEventListener 
     }
 
     /**
-     * Sets whether or not the background and outline of this text box should be drawn.
+     * Sets whether the background and outline of this text box should be drawn.
      */
     public void setBordered(boolean pEnableBackgroundDrawing) {
         this.bordered = pEnableBackgroundDrawing;
@@ -592,7 +591,7 @@ public class EditBox extends AbstractWidget implements Widget, GuiEventListener 
     }
 
     public boolean changeFocus(boolean pFocus) {
-        return this.visible && this.isEditable ? super.changeFocus(pFocus) : false;
+        return this.visible && this.isEditable && super.changeFocus(pFocus);
     }
 
     public boolean isMouseOver(double pMouseX, double pMouseY) {
@@ -669,7 +668,7 @@ public class EditBox extends AbstractWidget implements Widget, GuiEventListener 
     }
 
     /**
-     * Sets whether or not this textbox is visible
+     * Sets whether this textbox is visible
      */
     public void setVisible(boolean pIsVisible) {
         this.visible = pIsVisible;

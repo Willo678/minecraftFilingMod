@@ -10,10 +10,8 @@ public class Constants {
 
     public static final String MODID = "willos_filings";
 
+    @SuppressWarnings("unused")
     public static final Logger LOGGER = LogUtils.getLogger();
-    public static void log(String msg) {
-        LOGGER.debug(msg);
-    }
 
 
     public static ChestType FILING_CABINET = new ChestType(111, 9, 6,198, 219, 256, 256);
@@ -21,7 +19,7 @@ public class Constants {
     public static Comparator<StoredItemStack> FILING_COMPARATOR = (o1, o2) -> {
         int result = (int) (o2.getQuantity()-o1.getQuantity());
         if (result==0) {
-            return o1.getDisplayName().compareTo(o2.getDisplayName());
+            result = o1.getDisplayName().compareTo(o2.getDisplayName());
         }
         return result;
     };

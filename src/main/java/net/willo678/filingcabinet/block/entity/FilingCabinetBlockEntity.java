@@ -18,36 +18,38 @@ import net.willo678.filingcabinet.container.StoredItemStack;
 import net.willo678.filingcabinet.screen.FilingCabinetMenu;
 import net.willo678.filingcabinet.util.Constants;
 import net.willo678.filingcabinet.util.SingleItemHolder;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
+import javax.annotation.ParametersAreNonnullByDefault;
 
 public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity implements LidBlockEntity {
 
     public SingleItemHolder items; //Consider appropriate storage data structure
 
     private final ContainerOpenersCounter openersCounter = new ContainerOpenersCounter() {
+
         @Override
+        @ParametersAreNonnullByDefault
         protected void onOpen(Level level, BlockPos blockPos, BlockState blockState) {
 
         }
 
         @Override
+        @ParametersAreNonnullByDefault
         protected void onClose(Level level, BlockPos blockPos, BlockState blockState) {
 
         }
 
         @Override
-        protected void openerCountChanged(Level level, BlockPos blockPos, BlockState blockState, int p_155466_, int p_155467_) {
+        @ParametersAreNonnullByDefault
+        protected void openerCountChanged(Level level, BlockPos blockPos, BlockState blockState, int i, int i1) {
 
         }
 
         @Override
         protected boolean isOwnContainer(Player player) {
-            if (player.containerMenu instanceof FilingCabinetMenu bfcMenu) {
-                return true;
-            } else {
-                return false;
-            }
+            return player.containerMenu instanceof FilingCabinetMenu bfcMenu;
         }
     };
 
@@ -73,36 +75,37 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
     }
 
     @Override
-    public void startOpen(Player player) {
+    public void startOpen(@NotNull Player player) {
         if (!this.remove && !player.isSpectator()) {
             this.openersCounter.incrementOpeners(player, this.getLevel(), this.getBlockPos(), this.getBlockState());
         }
     }
 
     @Override
-    public void stopOpen(Player player) {
+    public void stopOpen(@NotNull Player player) {
         if (!this.remove && !player.isSpectator()) {
             this.openersCounter.decrementOpeners(player, this.getLevel(), this.getBlockPos(), this.getBlockState());
         }
     }
 
     @Override
-    public NonNullList<ItemStack> getItems() {
+    public @NotNull NonNullList<ItemStack> getItems() {
         return items.toNonNullList();
     }
 
     @Override
-    public void setItems(NonNullList<ItemStack> inputItems) {
+    public void setItems(@NotNull NonNullList<ItemStack> inputItems) {
         items = SingleItemHolder.fromNonNullList(inputItems);
     }
 
     @Override
-    protected Component getDefaultName() {
+    protected @NotNull Component getDefaultName() {
         return Component.translatable(Constants.MODID+".container.filingcabinet_chest");
     }
 
     @Override
-    protected AbstractContainerMenu createMenu(int id, Inventory inv) {
+    @ParametersAreNonnullByDefault
+    protected @NotNull AbstractContainerMenu createMenu(int id, Inventory inv) {
         return new FilingCabinetMenu(id, inv, this, this);
     }
 
@@ -145,6 +148,7 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
 
     }
 
+    @SuppressWarnings("ConstantValue")
     public StoredItemStack pushStack(StoredItemStack stack) {
         if (stack==null) {return null;}
         ItemStack copyStack = stack.getActualStack().copy();
@@ -185,6 +189,7 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
 
 
     @Override
+    @ParametersAreNonnullByDefault
     public void load(CompoundTag compoundTag) {
         super.load(compoundTag);
 
@@ -197,6 +202,7 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
     }
 
     @Override
+    @ParametersAreNonnullByDefault
     protected void saveAdditional(CompoundTag compoundTag) {
         super.saveAdditional(compoundTag);
 
@@ -207,13 +213,12 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
         }
     }
 
+    @SuppressWarnings("unused")
     public static void tick(Level level, BlockPos blockPos, BlockState blockState, FilingCabinetBlockEntity filingCabinetBlockEntity) {
+
     }
 
 
-    public void debugItems() {
-        items.debugContents();
-    }
 
     public String getLastSearch() {
         return lastSearch;

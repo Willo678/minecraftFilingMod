@@ -7,7 +7,7 @@ import java.util.Comparator;
 import java.util.function.Function;
 
 public class StoredItemStack {
-    private ItemStack stack;
+    private final ItemStack stack;
     private long count;
     private static final String ITEM_COUNT_NAME = "c", ITEMSTACK_NAME = "s";
     private int hash;

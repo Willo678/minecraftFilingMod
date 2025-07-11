@@ -1,5 +1,6 @@
 package net.willo678.filingcabinet.block;
 
+import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
@@ -22,7 +23,10 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.network.NetworkHooks;
 import net.willo678.filingcabinet.block.entity.FilingCabinetBlockEntity;
 import net.willo678.filingcabinet.block.entity.ModBlockEntities;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import javax.annotation.ParametersAreNonnullByDefault;
 
 public class FilingCabinetBlock extends HorizontalDirectionalBlock implements EntityBlock {
 
@@ -53,8 +57,10 @@ public class FilingCabinetBlock extends HorizontalDirectionalBlock implements En
     /* BLOCK ENTITY */
 
     @SuppressWarnings("deprecation")
+    @ParametersAreNonnullByDefault
+    @MethodsReturnNonnullByDefault
     @Override
-    public VoxelShape getShape(BlockState state, BlockGetter worldIn, BlockPos pos, CollisionContext context) {
+    public @NotNull VoxelShape getShape(BlockState state, BlockGetter worldIn, BlockPos pos, CollisionContext context) {
         return switch (state.getValue(FACING)) {
             case EAST -> AABB_EAST_HALF;
             case WEST -> AABB_WEST_HALF;
@@ -64,6 +70,8 @@ public class FilingCabinetBlock extends HorizontalDirectionalBlock implements En
     }
 
     @SuppressWarnings("deprecation")
+    @ParametersAreNonnullByDefault
+    @MethodsReturnNonnullByDefault
     @Override
     public void onRemove(BlockState blockstate, Level level, BlockPos blockPos, BlockState newState, boolean isMoving) {
         if (blockstate.getBlock() != newState.getBlock()) {
@@ -80,15 +88,18 @@ public class FilingCabinetBlock extends HorizontalDirectionalBlock implements En
     }
 
     @SuppressWarnings("deprecation")
-    public boolean triggerEvent(BlockState p_49226_, Level p_49227_, BlockPos p_49228_, int p_49229_, int p_49230_) {
-        super.triggerEvent(p_49226_, p_49227_, p_49228_, p_49229_, p_49230_);
-        BlockEntity blockentity = p_49227_.getBlockEntity(p_49228_);
-        return blockentity == null ? false : blockentity.triggerEvent(p_49229_, p_49230_);
+    @ParametersAreNonnullByDefault
+    @Override
+    public boolean triggerEvent(BlockState state, Level level, BlockPos pos, int ID, int param) {
+        super.triggerEvent(state, level, pos, ID, param);
+        BlockEntity blockentity = level.getBlockEntity(pos);
+        return blockentity!=null && blockentity.triggerEvent(ID, param);
     }
 
     @SuppressWarnings("deprecation")
+    @ParametersAreNonnullByDefault
     @Override
-    public InteractionResult use(BlockState pBlockState, Level pLevel, BlockPos pPos, Player pPlayer, InteractionHand pHand, BlockHitResult pHit) {
+    public @NotNull InteractionResult use(BlockState pBlockState, Level pLevel, BlockPos pPos, Player pPlayer, InteractionHand pHand, BlockHitResult pHit) {
         if (!pLevel.isClientSide) {
             BlockEntity entity = pLevel.getBlockEntity(pPos);
             if (entity instanceof FilingCabinetBlockEntity) {
@@ -102,18 +113,21 @@ public class FilingCabinetBlock extends HorizontalDirectionalBlock implements En
     }
 
     @Nullable
+    @ParametersAreNonnullByDefault
     @Override
     public BlockEntity newBlockEntity(BlockPos pPos, BlockState pState) {
         return new FilingCabinetBlockEntity(pPos, pState);
     }
 
 
-    @javax.annotation.Nullable
-    protected static <E extends BlockEntity, A extends BlockEntity> BlockEntityTicker<A> createTickerHelper(BlockEntityType<A> p_152133_, BlockEntityType<E> p_152134_, BlockEntityTicker<? super E> p_152135_) {
-        return p_152134_ == p_152133_ ? (BlockEntityTicker<A>)p_152135_ : null;
+    @SuppressWarnings("unchecked")
+    @Nullable
+    protected static <E extends BlockEntity, A extends BlockEntity> BlockEntityTicker<A> createTickerHelper(BlockEntityType<A> entityTypeA, BlockEntityType<E> entityTypeB, BlockEntityTicker<? super E> bTicker) {
+        return (entityTypeB == entityTypeA) ? (BlockEntityTicker<A>) bTicker : null;
     }
 
     @Nullable
+    @ParametersAreNonnullByDefault
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level pLevel, BlockState pState, BlockEntityType<T> pType) {
         return createTickerHelper(pType,
