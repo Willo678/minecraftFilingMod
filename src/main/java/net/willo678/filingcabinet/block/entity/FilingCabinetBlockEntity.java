@@ -14,7 +14,6 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.*;
 import net.minecraft.world.level.block.state.BlockState;
-import net.willo678.filingcabinet.container.StoredItemStack;
 import net.willo678.filingcabinet.screen.FilingCabinetMenu;
 import net.willo678.filingcabinet.util.Constants;
 import net.willo678.filingcabinet.util.SingleItemHolder;
@@ -137,21 +136,21 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
 
 
 
-    public @Nullable StoredItemStack pullStack(StoredItemStack stack, int max) {
+    public @Nullable ItemStack pullStack(ItemStack stack, int max) {
         if (stack==null || max<=0) {return null;}
 
-        ItemStack st = items.popItem(stack.getStack(), max);
+        ItemStack st = items.popItem(stack, max);
 
         if (st!=null) {setChanged();}
 
-        return new StoredItemStack(st);
+        return st;
 
     }
 
     @SuppressWarnings("ConstantValue")
-    public StoredItemStack pushStack(StoredItemStack stack) {
+    public ItemStack pushStack(ItemStack stack) {
         if (stack==null) {return null;}
-        ItemStack copyStack = stack.getActualStack().copy();
+        ItemStack copyStack = stack.copy();
         //Change 'amount' to any other value if you want to limit maximum insertion at a time
         int amount = copyStack.getCount();
         int remainder = copyStack.getCount() - amount;
@@ -160,23 +159,18 @@ public class FilingCabinetBlockEntity extends RandomizableContainerBlockEntity i
 
         if (success) {
             setChanged();
-            return (remainder > 0) ? new StoredItemStack(new ItemStack(copyStack.getItem(), remainder)) : null;
+            return (remainder > 0) ? new ItemStack(copyStack.getItem(), remainder) : null;
         } else {
             return stack;
         }
     }
 
-    public ItemStack pushStack(ItemStack itemStack) {
-        StoredItemStack is = pushStack(new StoredItemStack(itemStack));
-        setChanged();
-        return (is==null) ? ItemStack.EMPTY : is.getActualStack();
-    }
 
     public void pushOrDrop(ItemStack itemStack) {
         if (itemStack.isEmpty()) {return;}
-        StoredItemStack st0 = pushStack(new StoredItemStack(itemStack));
+        ItemStack st0 = pushStack(itemStack);
         if (st0!=null) {
-            Containers.dropItemStack(level, worldPosition.getX()+0.5f, worldPosition.getY()+0.5f, worldPosition.getZ()+0.5f, st0.getActualStack());
+            Containers.dropItemStack(level, worldPosition.getX()+0.5f, worldPosition.getY()+0.5f, worldPosition.getZ()+0.5f, st0);
         }
     }
 

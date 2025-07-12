@@ -17,7 +17,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.willo678.filingcabinet.container.StorageSlot;
-import net.willo678.filingcabinet.container.StoredItemStack;
 import net.willo678.filingcabinet.util.ChestType;
 import net.willo678.filingcabinet.util.Constants;
 import net.willo678.filingcabinet.util.NumberFormatUtil;
@@ -34,11 +33,11 @@ import static net.willo678.filingcabinet.container.CabinetSyncManager.getItemId;
 import static net.willo678.filingcabinet.screen.FilingCabinetMenu.SlotAction.*;
 
 public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMenu> implements MenuAccess<FilingCabinetMenu> {
-    private static final LoadingCache<StoredItemStack, List<String>> tooltipCache = CacheBuilder.newBuilder().expireAfterAccess(5, TimeUnit.SECONDS).build(new CacheLoader<>() {
+    private static final LoadingCache<ItemStack, List<String>> tooltipCache = CacheBuilder.newBuilder().expireAfterAccess(5, TimeUnit.SECONDS).build(new CacheLoader<>() {
 
         @Override
-        public @NotNull List<String> load(@NotNull StoredItemStack key) {
-            return key.getStack().getTooltipLines(Minecraft.getInstance().player, getTooltipFlag()).stream().map(Component::getString).collect(Collectors.toList());
+        public @NotNull List<String> load(@NotNull ItemStack key) {
+            return key.getTooltipLines(Minecraft.getInstance().player, getTooltipFlag()).stream().map(Component::getString).collect(Collectors.toList());
         }
 
     });
@@ -160,7 +159,7 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
         if (menu.getCarried().isEmpty() && slotIDUnderMouse!=-1) {
             StorageSlot slot = getMenu().storageSlotList.get(slotIDUnderMouse);
             if (slot.stack!=null) {
-                renderTooltip(poseStack, slot.stack.getActualStack(), (mouseX-getGuiLeft()), mouseY);
+                renderTooltip(poseStack, slot.stack, (mouseX-getGuiLeft()), mouseY);
             }
         }
         //super.renderLabels(poseStack, mouseX, mouseY);
@@ -188,13 +187,13 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
             this.setBlitOffset(100);
             this.itemRenderer.blitOffset = 100.0F;
 
-            ItemStack stack = slot.stack.getStack().copy().split(1);
+            ItemStack stack = slot.stack.copy().split(1);
             int i = slot.xDisplayPosition, j = slot.yDisplayPosition;
 
             this.itemRenderer.renderAndDecorateItem(Objects.requireNonNull(mc.player), stack, i, j, 0);
             this.itemRenderer.renderGuiItemDecorations(this.font, stack, i, j, null);
 
-            drawStackSize(poseStack, getFont(), slot.stack.getQuantity(), i, j);
+            drawStackSize(poseStack, getFont(), slot.stack.getCount(), i, j);
 
             this.itemRenderer.blitOffset = 0.0F;
             this.setBlitOffset(0);
@@ -279,13 +278,13 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
         return super.mouseClicked(mouseX, mouseY, mouseButton);
     }
 
-    protected void storageSlotClick(StoredItemStack slotStack, FilingCabinetMenu.SlotAction action, boolean pullOne) {
+    protected void storageSlotClick(ItemStack slotStack, FilingCabinetMenu.SlotAction action, boolean pullOne) {
         menu.sync.sendClientInteract(slotStack, action, pullOne);
     }
 
     protected boolean slotIdContainsAny() {
-        StoredItemStack stack = getMenu().getSlotByID(slotIDUnderMouse).stack;
-        return stack!=null && stack.getQuantity() > 0;
+        ItemStack stack = getMenu().getSlotByID(slotIDUnderMouse).stack;
+        return stack!=null && stack.getCount() > 0;
     }
 
     public boolean isPullOne(int mouseButton) {
@@ -340,9 +339,9 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
 
             try {
                 for (int i=0; i<getMenu().itemList.size(); i++) {
-                    StoredItemStack is = getMenu().itemList.get(i);
-                    if (is!=null && is.getStack()!=null) {
-                        String dspName = searchMod ? getItemId(is.getStack().getItem()).getNamespace() : is.getStack().getHoverName().getString();
+                    ItemStack is = getMenu().itemList.get(i);
+                    if (is!=null) {
+                        String dspName = searchMod ? getItemId(is.getItem()).getNamespace() : is.getHoverName().getString();
 
                         if (m.matcher(dspName.toLowerCase()).find()) {
                             addStackToClientList(is);
@@ -380,7 +379,7 @@ public class FilingCabinetScreen extends AbstractContainerScreen<FilingCabinetMe
     @SuppressWarnings("unused")
     private void onUpdateSearch(String searchString) {}
 
-    private void addStackToClientList(StoredItemStack is) {
+    private void addStackToClientList(ItemStack is) {
         getMenu().sortedItemList.add(is);
     }
 

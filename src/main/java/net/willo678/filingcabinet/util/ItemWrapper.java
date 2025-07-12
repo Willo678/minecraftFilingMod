@@ -15,6 +15,17 @@ public class ItemWrapper {
         return itemStack;
     }
 
+
+    public static ItemWrapper getSingleItemWrapper(ItemStack itemStack) {
+        return new ItemWrapper(getSingleItemstack(itemStack));
+    }
+
+    public static ItemStack getSingleItemstack(ItemStack itemStack) {
+        ItemStack toReturn = itemStack.copy();
+        toReturn.setCount(1);
+        return toReturn;
+    }
+
     @Override
     public String toString() {
         return itemStack.toString();
@@ -23,7 +34,9 @@ public class ItemWrapper {
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof ItemWrapper wrapper) {
-            return itemStack.sameItem(wrapper.itemStack);
+            return ItemStack.isSame(this.itemStack, wrapper.itemStack)
+                    && ItemStack.isSameItemSameTags(this.itemStack, wrapper.itemStack);
+                    //&& this.itemStack.getCount() == wrapper.itemStack.getCount();
         } else {
             return super.equals(obj);
         }
@@ -31,6 +44,6 @@ public class ItemWrapper {
 
     @Override
     public int hashCode() {
-        return Objects.hash(itemStack.getItem(), itemStack.getTag());
+        return Objects.hash(itemStack.getItem(), itemStack.getTag());//, itemStack.getCount());
     }
 }

@@ -3,8 +3,8 @@ package net.willo678.filingcabinet.util;
 import net.minecraft.core.NonNullList;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.willo678.filingcabinet.container.StoredItemStack;
 import org.jetbrains.annotations.NotNull;
+import static net.willo678.filingcabinet.util.ItemWrapper.getSingleItemWrapper;
 
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -25,14 +25,14 @@ public class SingleItemHolder {
     public boolean putItem(ItemStack itemStack, int quantity) {
         if (!canContainItem(itemStack)) {return false;}
         itemType = itemStack.getItem();
-        items.merge(getItemWrapper(itemStack), quantity, Integer::sum);
+        items.merge(getSingleItemWrapper(itemStack), quantity, Integer::sum);
         return true;
     }
 
     public boolean putItem(@NotNull ItemStack itemStack) {
         if (!canContainItem(itemStack)) {return false;}
         itemType = itemStack.getItem();
-        items.merge(getItemWrapper(itemStack), itemStack.getCount(), Integer::sum);
+        items.merge(getSingleItemWrapper(itemStack), itemStack.getCount(), Integer::sum);
         return true;
     }
 
@@ -42,12 +42,12 @@ public class SingleItemHolder {
     public boolean setItem(ItemStack itemStack, int quantity) {
         if (!canContainItem(itemStack)) {return false;}
         itemType = itemStack.getItem();
-        items.put(getItemWrapper(itemStack), quantity);
+        items.put(getSingleItemWrapper(itemStack), quantity);
         return true;
     }
 
     public Integer get(ItemStack itemStack) {
-        ItemWrapper toReturn = getItemWrapper(itemStack);
+        ItemWrapper toReturn = getSingleItemWrapper(itemStack);
         return items.getOrDefault(toReturn, 0);
     }
 
@@ -59,10 +59,10 @@ public class SingleItemHolder {
     }
 
     public ItemStack popItem(ItemStack itemStack, int maxQuantity) {
-        int actualQuantity = Math.min(maxQuantity, items.getOrDefault(getItemWrapper(itemStack), 0));
+        int actualQuantity = Math.min(maxQuantity, items.getOrDefault(getSingleItemWrapper(itemStack), 0));
         if (actualQuantity==0) {return null;}
         else {
-            ItemWrapper wrapper = getItemWrapper(itemStack);
+            ItemWrapper wrapper = getSingleItemWrapper(itemStack);
             items.merge(wrapper, -actualQuantity, Integer::sum);
 
             if (items.getOrDefault(wrapper,0) <= 0) {
@@ -91,8 +91,8 @@ public class SingleItemHolder {
         return itemList;
     }
 
-    public List<StoredItemStack> toStoredItemStackList() {
-        List<StoredItemStack> itemList = new ArrayList<>(this.items.size());
+    public List<ItemStack> toItemStackList() {
+        List<ItemStack> itemList = new ArrayList<>(this.items.size());
 
         for (Map.Entry<ItemWrapper, Integer> entry : items.entrySet()) {
             ItemStack stack;
@@ -101,7 +101,7 @@ public class SingleItemHolder {
             } else {
                 stack = ItemStack.EMPTY;
             }
-            itemList.add(new StoredItemStack(stack));
+            itemList.add(stack);
         }
 
         return itemList;
@@ -119,15 +119,6 @@ public class SingleItemHolder {
     }
 
 
-    public static ItemWrapper getItemWrapper (ItemStack itemStack) {
-        return new ItemWrapper(getSingleItemstack(itemStack));
-    }
-
-    public static ItemStack getSingleItemstack(ItemStack itemStack) {
-        ItemStack toReturn = itemStack.copy();
-        toReturn.setCount(1);
-        return toReturn;
-    }
 
     public static ItemStack makeItemStackOfCount(ItemStack itemStack, int count) {
         ItemStack copy = itemStack.copy();
@@ -180,7 +171,7 @@ public class SingleItemHolder {
      *                              (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
     public boolean containsKey(Object o) {
-        if (o instanceof ItemStack itemStack) {return items.containsKey(getItemWrapper(itemStack));}
+        if (o instanceof ItemStack itemStack) {return items.containsKey(getSingleItemWrapper(itemStack));}
         else {return false;}
     }
 
@@ -200,7 +191,7 @@ public class SingleItemHolder {
      * @return {@code true} if an element was removed as a result of this call
      */
     public boolean remove(@NotNull ItemStack itemStack) {
-        boolean flag = (items.remove(getItemWrapper(itemStack))!=null);
+        boolean flag = (items.remove(getSingleItemWrapper(itemStack))!=null);
         if (isEmpty()) {itemType = null;}
         return flag;
     }

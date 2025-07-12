@@ -13,7 +13,6 @@ import net.minecraft.world.item.ItemStack;
 import net.willo678.filingcabinet.block.entity.FilingCabinetBlockEntity;
 import net.willo678.filingcabinet.container.CabinetSyncManager;
 import net.willo678.filingcabinet.container.StorageSlot;
-import net.willo678.filingcabinet.container.StoredItemStack;
 import net.willo678.filingcabinet.network.ClientToServerStoragePacket;
 import net.willo678.filingcabinet.network.Networking;
 import net.willo678.filingcabinet.util.ChestType;
@@ -38,8 +37,8 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
     protected int playerSlotsStart;
 
     public List<StorageSlot> storageSlotList = new ArrayList<>();
-    public List<StoredItemStack> itemList = new ArrayList<>();
-    public List<StoredItemStack> sortedItemList = new ArrayList<>();
+    public List<ItemStack> itemList = new ArrayList<>();
+    public List<ItemStack> sortedItemList = new ArrayList<>();
     private String search;
 
 
@@ -99,12 +98,9 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
 
     protected final void addSlotToContainer(StorageSlot storageSlot) {storageSlotList.add(storageSlot);}
 
-    public final void setSlotContents(int id, ItemStack stack) {
-        setSlotContents(id, new StoredItemStack(stack));
-    }
 
-    public final void setSlotContents(int id, StoredItemStack stack) {
-        if (stack.getQuantity()<=0) {stack = null;}
+    public final void setSlotContents(int id, ItemStack stack) {
+        if (stack.getCount()<=0) {stack = null;}
         storageSlotList.get(id).stack = stack;
     }
 
@@ -119,7 +115,7 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
 
 
 
-    public void onInteract(StoredItemStack clicked, SlotAction action, boolean pullOne) {
+    public void onInteract(ItemStack clicked, SlotAction action, boolean pullOne) {
         if (playerInv.player instanceof ServerPlayer serverPlayer) {serverPlayer.resetLastActionTime();}
 
         ItemStack carriedStack = getCarried();
@@ -128,14 +124,14 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
         switch (action) {
             case PULL_OR_PUSH_STACK -> {
                 if (!carriedStack.isEmpty()) {
-                    StoredItemStack rem = parent.pushStack(new StoredItemStack(carriedStack));
-                    ItemStack itemStack = (rem==null) ? ItemStack.EMPTY : rem.getActualStack();
+                    ItemStack rem = parent.pushStack(carriedStack);
+                    ItemStack itemStack = (rem==null) ? ItemStack.EMPTY : rem;
                     setCarried(itemStack);
                 } else {
                     if (clicked==null) {return;}
-                    StoredItemStack pulled = parent.pullStack(clicked, clicked.getMaxStackSize());
+                    ItemStack pulled = parent.pullStack(clicked, clicked.getMaxStackSize());
                     if (pulled!=null) {
-                        setCarried(pulled.getActualStack());
+                        setCarried(pulled);
                     }
                 }
             }
@@ -152,24 +148,24 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
             case PULL_ONE -> {
                 if (clicked==null) {return;}
                 if (pullOne) {
-                    StoredItemStack pulled = parent.pullStack(clicked, 1);
+                    ItemStack pulled = parent.pullStack(clicked, 1);
                     if (pulled!=null) {
-                        ItemStack itemStack = pulled.getActualStack();
+                        ItemStack itemStack = pulled.copy();
                         this.moveItemStackTo(itemStack, playerSlotsStart+1, this.slots.size(), true);
                         if (itemStack.getCount()>0) {parent.pushOrDrop(itemStack);}
                     }
                 } else {
                     if (!carriedStack.isEmpty()) {
-                        if (ItemStack.isSameItemSameTags(carriedStack, clicked.getStack()) && carriedStack.getCount()+1 <= carriedStack.getMaxStackSize()) {
-                            StoredItemStack pulled = parent.pullStack(clicked, 1);
+                        if (ItemStack.isSameItemSameTags(carriedStack, clicked) && carriedStack.getCount()+1 <= carriedStack.getMaxStackSize()) {
+                            ItemStack pulled = parent.pullStack(clicked, 1);
                             if (pulled!=null) {
                                 carriedStack.grow(1);
                             }
                         }
                     } else {
-                        StoredItemStack pulled = parent.pullStack(clicked, 1);
+                        ItemStack pulled = parent.pullStack(clicked, 1);
                         if (pulled!=null) {
-                            setCarried(pulled.getActualStack());
+                            setCarried(pulled.copy());
                         }
                     }
                 }
@@ -181,9 +177,9 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
             }
             case SHIFT_PULL -> {
                 if (clicked==null) {return;}
-                StoredItemStack pulled = parent.pullStack(clicked, clicked.getMaxStackSize());
+                ItemStack pulled = parent.pullStack(clicked, clicked.getMaxStackSize());
                 if (pulled!=null) {
-                    ItemStack itemStack = pulled.getActualStack();
+                    ItemStack itemStack = pulled.copy();
                     this.moveItemStackTo(itemStack, playerSlotsStart+1, this.slots.size(), true);
                     if (itemStack.getCount() > 0) {
                         parent.pushOrDrop(itemStack);
@@ -200,9 +196,9 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
                     if (clicked == null) {
                         return;
                     }
-                    StoredItemStack pulled = parent.pullStack(clicked, (int) Math.max(Math.min(clicked.getQuantity() / 2, clicked.getMaxStackSize() / 2), 1));
+                    ItemStack pulled = parent.pullStack(clicked, (int) Math.max(Math.min(clicked.getCount() / 2, clicked.getMaxStackSize() / 2), 1));
                     if (pulled != null) {
-                        setCarried(pulled.getActualStack());
+                        setCarried(pulled);
                     }
                 }
             }
@@ -215,12 +211,12 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
                 } else {
                     if (clicked == null) return;
                     long maxCount = 64;
-                    for (StoredItemStack e : itemList) {
-                        if (e.equals(clicked)) maxCount = e.getQuantity();
+                    for (ItemStack e : itemList) {
+                        if (e.equals(clicked)) maxCount = e.getCount();
                     }
-                    StoredItemStack pulled = parent.pullStack(clicked, (int) Math.max(Math.min(maxCount, clicked.getMaxStackSize()) / 4, 1));
+                    ItemStack pulled = parent.pullStack(clicked, (int) Math.max(Math.min(maxCount, clicked.getMaxStackSize()) / 4, 1));
                     if (pulled != null) {
-                        setCarried(pulled.getActualStack());
+                        setCarried(pulled);
                     }
                 }
             }
@@ -307,9 +303,9 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
             if (!parent.items.canContainItem(origin)) {return itemStack;}
             itemStack = origin.copy();
 
-            StoredItemStack remainder = parent.pushStack(new StoredItemStack(itemStack));
+            ItemStack remainder = parent.pushStack(itemStack);
 
-            if (remainder==null || remainder.getQuantity()<=0) {
+            if (remainder==null || remainder.getCount()<=0) {
                 slot.set(ItemStack.EMPTY);
                 slot.setChanged();
                 return ItemStack.EMPTY;
