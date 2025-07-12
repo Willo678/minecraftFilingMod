@@ -6,15 +6,26 @@ import java.util.Objects;
 
 public class ItemWrapper {
     protected ItemStack itemStack;
+    protected int quantity;
 
     public ItemWrapper(ItemStack itemStack) {
-        this.itemStack = itemStack;
+        this.itemStack = getSingleItemstack(itemStack);
+        this.quantity = itemStack.getCount();
     }
 
     public ItemStack getItemStack() {
-        return itemStack;
+        ItemStack copy = itemStack.copy();
+        copy.setCount(quantity);
+        return copy;
     }
 
+    public int getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(int quantity) {
+        this.quantity = quantity;
+    }
 
     public static ItemWrapper getSingleItemWrapper(ItemStack itemStack) {
         return new ItemWrapper(getSingleItemstack(itemStack));

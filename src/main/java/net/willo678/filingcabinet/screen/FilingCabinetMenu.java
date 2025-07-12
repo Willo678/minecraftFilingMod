@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FilingCabinetMenu extends AbstractContainerMenu {
-
     public static final ChestType chestType = Constants.FILING_CABINET;
 
     private final FilingCabinetBlockEntity parent;
@@ -222,7 +221,6 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
             }
         }
         playerInv.setChanged();
-        sendAllDataToRemote();
     }
 
 
@@ -250,14 +248,16 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
 
         SingleItemHolder tmpItems = parent.items;
 
-        sync.update(tmpItems, (ServerPlayer) playerInv.player, tag -> {
-            if (!parent.getLastSearch().equals(search)) {
-                search = parent.getLastSearch();
-                tag.putString("search", search);
-            }
+        if (playerInv.player instanceof ServerPlayer serverPlayer) {
+            sync.update(tmpItems, serverPlayer, tag -> {
+                if (!parent.getLastSearch().equals(search)) {
+                    search = parent.getLastSearch();
+                    tag.putString("search", search);
+                }
 
-//            tag.put("sortSettings", parent.sortSettings.toTag());
-        });
+//              tag.put("sortSettings", parent.sortSettings.toTag());
+            });
+        }
 
         super.broadcastChanges();
     }
@@ -311,7 +311,6 @@ public class FilingCabinetMenu extends AbstractContainerMenu {
                 return ItemStack.EMPTY;
             }
         }
-
 
         return itemStack;
     }

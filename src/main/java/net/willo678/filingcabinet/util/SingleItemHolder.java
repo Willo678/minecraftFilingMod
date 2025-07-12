@@ -19,8 +19,8 @@ public class SingleItemHolder {
         items = new HashMap<>();
     }
 
-    public boolean canContainItem(ItemWrapper itemWrapper) {return (itemType==null) || (itemWrapper.getItemStack().getItem()==itemType);}
-    public boolean canContainItem(ItemStack itemStack) {return (itemType==null) || (itemStack.getItem()==itemType);}
+    public boolean canContainItem(ItemWrapper itemWrapper) {return canContainItem(itemWrapper.getItemStack());}
+    public boolean canContainItem(ItemStack itemStack) {return (!itemStack.isEmpty()) && ((itemType==null) || (itemStack.getItem()==itemType));}
 
     public boolean putItem(ItemStack itemStack, int quantity) {
         if (!canContainItem(itemStack)) {return false;}
@@ -192,6 +192,12 @@ public class SingleItemHolder {
      */
     public boolean remove(@NotNull ItemStack itemStack) {
         boolean flag = (items.remove(getSingleItemWrapper(itemStack))!=null);
+        if (isEmpty()) {itemType = null;}
+        return flag;
+    }
+
+    public boolean remove(@NotNull ItemWrapper itemWrapper) {
+        boolean flag = (items.remove(itemWrapper)!=null);
         if (isEmpty()) {itemType = null;}
         return flag;
     }

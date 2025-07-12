@@ -37,52 +37,52 @@ public class CabinetSyncManager {
     private int lastId = 1;
     private final FriendlyByteBuf workBuf = new FriendlyByteBuf(Unpooled.buffer());
 
-    private void writeStack(FriendlyByteBuf buf, ItemStack stack) {
-        Item item = stack.getItem();
-        CompoundTag compoundTag = getSyncTag(stack);
-        byte flags = (byte) ((stack.getCount() == 0 ? 1 : 0) | (compoundTag!=null ? 2 : 0));
+    private void writeStack(FriendlyByteBuf buf, ItemWrapper wrapper) {
+        Item item = wrapper.getItemStack().getItem();
+        CompoundTag compoundTag = getSyncTag(wrapper.getItemStack());
+        byte flags = (byte) ((wrapper.getQuantity() == 0 ? 1 : 0) | (compoundTag!=null ? 2 : 0));
         boolean wr = true;
-        int id = idMap.getInt(stack);
+        int id = idMap.getInt(wrapper);
         if (id!=0) {
             flags |= 4;
             wr = false;
         }
 
         buf.writeByte(flags);
-        buf.writeVarInt(idMap.computeIfAbsent(getSingleItemWrapper(stack), s-> {
+        buf.writeVarInt(idMap.computeIfAbsent(wrapper, s-> {
             int i = lastId++;
             idMap2.put(i, (ItemWrapper) s);
             return i;
         }));
 
         if (wr) {writeItemId(buf, item);}
-        if (stack.getCount()!=0) {buf.writeVarLong(stack.getCount());}
+        if (wrapper.getQuantity()!=0) {buf.writeVarLong(wrapper.getQuantity());}
         if (wr && compoundTag!=null) {buf.writeNbt(compoundTag);}
     }
 
 
-    private ItemStack read(FriendlyByteBuf buf) {
+    private ItemWrapper read(FriendlyByteBuf buf) {
         byte flags = buf.readByte();
         int id = buf.readVarInt();
         boolean rd = (flags & 4) == 0;
-        ItemStack stack;
+        ItemWrapper stack;
         if(rd) {
-            stack = new ItemStack(readItemId(buf));
+            stack = new ItemWrapper(new ItemStack(readItemId(buf)));
         } else {
-            stack = idMap2.get(id).getItemStack().copy();
+            stack = idMap2.get(id);
         }
         long count = (flags & 1) != 0 ? 0 : buf.readVarLong();
-        stack.setCount((int) count);
+        stack.setQuantity((int) count);
         if(rd && (flags & 2) != 0) {
-            stack.setTag(buf.readNbt());
+            stack.getItemStack().setTag(buf.readNbt());
         }
-        idMap.put(getSingleItemWrapper(stack), id);
-        idMap2.put(id, getSingleItemWrapper(stack));
+        idMap.put(stack, id);
+        idMap2.put(id, stack);
         return stack;
     }
 
     public void update(SingleItemHolder items, ServerPlayer player, Consumer<CompoundTag> extraSync) {
-        List<ItemStack> toWrite = new ArrayList<>();
+        List<ItemWrapper> toWrite = new ArrayList<>();
         Set<ItemWrapper> found = new HashSet<>();
         items.forEach((s, c) -> {
             long pc = this.items.get(s.getItemStack());
@@ -90,14 +90,13 @@ public class CabinetSyncManager {
             if(pc != c) {
                 ItemStack stack = s.getItemStack();
                 stack.setCount(c);
-                toWrite.add(stack);
+                toWrite.add(new ItemWrapper(stack));
             }
         });
         this.items.forEach((s, c) -> {
             if(!found.contains(s)) {
-                ItemStack stack = s.getItemStack();
-                stack.setCount(0);
-                toWrite.add(stack);
+                s.setQuantity(0);
+                toWrite.add(s);
             }
         });
         this.items.clear();
@@ -106,7 +105,7 @@ public class CabinetSyncManager {
             workBuf.writerIndex(0);
             int j = 0;
             for (int i = 0; i < toWrite.size(); i++, j++) {
-                ItemStack stack = toWrite.get(i);
+                ItemWrapper stack = toWrite.get(i);
                 int li = workBuf.writerIndex();
                 writeStack(workBuf, stack);
                 int s = workBuf.writerIndex();
@@ -138,16 +137,16 @@ public class CabinetSyncManager {
     public boolean receiveUpdate(CompoundTag tag) {
         if(tag.contains("d")) {
             FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.wrappedBuffer(tag.getByteArray("d")));
-            List<ItemStack> in = new ArrayList<>();
+            List<ItemWrapper> in = new ArrayList<>();
             short len = tag.getShort("l");
             for (int i = 0; i < len; i++) {
                 in.add(read(buf));
             }
             in.forEach(s -> {
-                if(s.getCount() == 0) {
+                if(s.getQuantity() == 0) {
                     this.itemList.remove(s);
                 } else {
-                    this.itemList.setItem(s);
+                    this.itemList.setItem(s.getItemStack());
                 }
             });
             return true;
@@ -177,8 +176,7 @@ public class CabinetSyncManager {
     }
 
     public void receiveInteract(CompoundTag tag, FilingCabinetMenu handler) {
-        if(!tag.contains("interaction"))
-            return;
+        if(!tag.contains("interaction")) {return;}
 
         CompoundTag interactTag = tag.getCompound("interaction");
         boolean pullOne = interactTag.getBoolean("pullOne");
