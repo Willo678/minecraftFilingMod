@@ -6,6 +6,7 @@ import net.minecraft.world.item.ItemStack;
 import java.util.Comparator;
 import java.util.function.Function;
 
+@Deprecated
 public class StoredItemStack {
     private final ItemStack stack;
     private long count;
